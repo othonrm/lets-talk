@@ -6,7 +6,7 @@ const socket = io("othon-peerjs-test.herokuapp.com");
 
 const peer = new Peer(undefined, {
     path: "/peerjs",
-    host: "othon-peerjs-test.herokuapp.com",
+    host: "https://othon-peerjs-test.herokuapp.com",
     port: 80,
 });
 
