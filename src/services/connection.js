@@ -8,7 +8,7 @@ const peer = new Peer(undefined, {
     path: "/peerjs",
     host: "othon-peerjs-test.herokuapp.com",
     secure: true,
-    port: 80,
+    // port: 80,
 });
 
 const peers = {};
