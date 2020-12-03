@@ -2,29 +2,55 @@ const express = require("express");
 // const favicon = require("express-favicon");
 const path = require("path");
 const app = express();
-const cors = require("cors");
+const port = process.env.PORT || 8080;
+
 const server = require("http").Server(app);
 const io = require("socket.io")(server, {
     cors: {
-        origin: "*",
+        origin:
+            process.env.NODE_ENV !== "production"
+                ? "*"
+                : "https://othon-lets-talk.herokuapp.com",
     },
 });
 const { ExpressPeerServer } = require("peer");
-
-const port = process.env.PORT || 8080;
 
 const peerServer = ExpressPeerServer(server, {
     debug: true,
 });
 
-var corsOptions = {
-    origin: "*",
-    optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
-};
-
-app.use(cors(corsOptions));
+app.use((req, res, next) => {
+    const allowedOrigins =
+        process.env.NODE_ENV !== "production"
+            ? [
+                  "http://127.0.0.1:3000",
+                  "http://localhost:8080",
+                  "http://127.0.0.1:8080",
+                  "http://localhost:3000",
+              ]
+            : ["https://othon-lets-talk.herokuapp.com"];
+    const origin = req.headers.origin;
+    console.log(origin);
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+    }
+    res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.header("Access-Control-Allow-Credentials", true);
+    return next();
+});
 
 // app.use(favicon(__dirname + "/build/favicon.ico"));
+
+app.use(function (req, res, next) {
+    if (req.secure || process.env.NODE_ENV !== "production") {
+        // request was via https, so do no special handling
+        next();
+    } else {
+        // request was via http, so redirect to https
+        res.redirect("https://" + req.headers.host + req.url);
+    }
+});
 
 app.use("/peerjs", peerServer);
 
