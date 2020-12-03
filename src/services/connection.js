@@ -2,12 +2,15 @@ import { useEffect, useState } from "react";
 import io from "socket.io-client";
 import Peer from "peerjs";
 
-const socket = io("othon-peerjs-test.herokuapp.com");
+const socket = io("localhost:8080");
+
+console.log(process.env.NODE_ENV);
 
 const peer = new Peer(undefined, {
     path: "/peerjs",
-    host: "othon-peerjs-test.herokuapp.com",
-    secure: true,
+    host: "/",
+    secure: process.env.NODE_ENV === "development" ? false : true,
+    port: process.env.NODE_ENV === "development" ? 8080 : 443,
 });
 
 const peers = {};
@@ -18,14 +21,6 @@ const Connection = () => {
     const [currentUserStream, setCurrentUserStream] = useState(undefined);
 
     useEffect(() => {
-        peer.on("open", (id) => {
-            let room_id = "123";
-
-            setMyId(id);
-
-            socket.emit("join-room", room_id, id);
-        });
-
         socket.on("user-disconnected", (userId) => {
             if (peers[userId]) peers[userId].close();
         });
@@ -39,6 +34,14 @@ const Connection = () => {
 
     useEffect(() => {
         if (currentUserStream) {
+            peer.on("open", (id) => {
+                let room_id = "123";
+
+                setMyId(id);
+
+                socket.emit("join-room", room_id, id);
+            });
+
             peer.on("call", (call) => {
                 const checkMyStream = () => {
                     if (!currentUserStream) {
@@ -132,6 +135,8 @@ const Connection = () => {
             createEmptyVideoTrack({ width: 640, height: 480 }),
         ]);
 
+        console.log("making call");
+
         const call = peer.call(userId, stream);
         const video = document.createElement("video");
         let userContainer;
@@ -148,6 +153,8 @@ const Connection = () => {
     };
 
     const answerCall = (call, stream) => {
+        console.log("answering call");
+
         call.answer(stream);
         const video = document.createElement("video");
         let userContainer;
@@ -186,6 +193,10 @@ const Connection = () => {
             currentUserStream.getVideoTracks()[0].enabled = true;
         }
     };
+
+    window.sendMessage = sendMessage;
+    window.toggleMute = toggleMute;
+    window.toggleVideo = toggleVideo;
 
     const createEmptyAudioTrack = () => {
         const ctx = new AudioContext();
