@@ -19,6 +19,8 @@ const peerServer = ExpressPeerServer(server, {
     debug: true,
 });
 
+console.log(process.env.NODE_ENV);
+
 app.use((req, res, next) => {
     const allowedOrigins =
         process.env.NODE_ENV !== "production"
