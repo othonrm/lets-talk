@@ -53,11 +53,17 @@ app.get("/ping", function (req, res) {
     return res.send("pong");
 });
 
-app.get("/*", function (req, res) {
-    if (!req.secure && process.env.NODE_ENV === "production") {
-        res.redirect("https://" + req.headers.host + req.url);
-    }
+// app.use(function (req, res, next) {
+//     if (req.secure || process.env.NODE_ENV !== "production") {
+//         // request was via https, so do no special handling
+//         next();
+//     } else {
+//         // request was via http, so redirect to https
+//         res.redirect("https://" + req.headers.host + req.url);
+//     }
+// });
 
+app.get("/*", function (req, res) {
     res.sendFile(path.join(__dirname, "build", "index.html"));
 });
 
