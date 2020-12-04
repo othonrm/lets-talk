@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
 import Peer from "peerjs";
-import { matchPath } from "react-router";
-import styled, { css } from "styled-components";
+import { matchPath, useHistory, useParams } from "react-router";
+import styled from "styled-components";
+
+import { addVideoStream, replaceSenderTrack, useForceUpdate } from "../helpers";
 
 import {
     FaMicrophoneAlt,
@@ -11,8 +13,17 @@ import {
     FaVideoSlash,
     FaDesktop,
     FaSignOutAlt,
+    FaLock,
+    FaUnlock,
 } from "react-icons/fa";
 import { Flex } from "../helpers/styles";
+
+import Button from "../components/Button";
+import RoundedButton from "../components/RoundedButton";
+
+import enter_room from "../assets/audios/enter_room.mp3";
+import leave_room from "../assets/audios/leave_room.mp3";
+import knocking from "../assets/audios/knocking.mp3";
 
 let socket;
 let peer;
@@ -34,6 +45,9 @@ const connectSocketNPeer = (callback) => {
 };
 
 const Connection = ({ handleLeaveRoom, ...props }) => {
+    const { room_id } = useParams();
+    const history = useHistory();
+
     const current_path = matchPath(window.location.pathname, {
         path: "/:room_id",
         exact: true,
@@ -53,11 +67,31 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
     const [currentDisplayStream, setCurrentDisplayStream] = useState(undefined);
     const [audioMuted, setAudioMuted] = useState(false);
     const [videoDisabled, setVideoDisabled] = useState(false);
+    const [roomLocked, setRoomLocked] = useState(false);
+    const [roomOwner, setRoomOwner] = useState(false);
+    const [knockRequests, setKnockRequests] = useState([]);
+
+    const audioEnterRoom = new Audio(enter_room);
+    const audioLeaveRoom = new Audio(leave_room);
+    const audioKnocking = new Audio(knocking);
+    audioEnterRoom.volume = 0.5;
+    audioLeaveRoom.volume = 0.5;
+    audioKnocking.volume = 0.5;
 
     const myVideoRef = useRef(myVideoElement);
 
     useEffect(() => {
+        return () => {
+            audioLeaveRoom.play();
+        };
+
+        // eslint-disable-next-line
+    }, []);
+
+    useEffect(() => {
         if (currentUserStream && !connected) {
+            audioEnterRoom.play();
+
             connectSocketNPeer(setEvents);
         }
 
@@ -155,6 +189,26 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
         // eslint-disable-next-line
     }, [screenSharing, currentDisplayStream]);
 
+    useEffect(() => {
+        if (knockRequests) {
+            if (knockRequests.length > 0) {
+                audioKnocking.play();
+            }
+
+            socket && socket.removeAllListeners("knock-request");
+
+            socket &&
+                socket.on("knock-request", (roomId, userName, socketId) => {
+                    console.log("USer knocking: " + userName);
+                    console.log(socketId);
+
+                    setKnockRequests([...knockRequests, [socketId, userName]]);
+                });
+        }
+
+        // eslint-disable-next-line
+    }, [knockRequests]);
+
     const setEvents = () => {
         setSocketEvents();
         setPeerEvents();
@@ -192,6 +246,27 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
         socket.on("received-message", (msg) => {
             console.log(msg);
         });
+
+        socket.on("room-lock", (roomLockStatus) => {
+            console.log("Room lock status: " + roomLockStatus);
+            setRoomLocked(roomLockStatus);
+        });
+
+        socket.on("room-owner", (roomOwnerId) => {
+            console.log("Room owner id: " + roomOwnerId);
+            setRoomOwner(socket.id === roomOwnerId);
+        });
+
+        socket.on("knock-request", (roomId, userName, socketId) => {
+            console.log(`User knocking: ${userName} ${socketId}`);
+
+            setKnockRequests([...knockRequests, [socketId, userName]]);
+        });
+
+        socket.on("invaded-not-allowed", () => {
+            console.log("YOU SHALL NOT PASS");
+            window.location.reload();
+        });
     };
 
     const setPeerEvents = () => {
@@ -204,7 +279,13 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
 
             setMyId(peer_id);
 
-            socket.emit("join-room", room_id, peer_id, currentUserName);
+            socket.emit(
+                "join-room",
+                room_id,
+                peer_id,
+                currentUserName,
+                localStorage.getItem("locked_room_pass")
+            );
         });
 
         peer.on("call", (call) => {
@@ -231,6 +312,8 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
         peer && peer.destroy();
         socket && socket.disconnect();
         socket && socket.close();
+
+        history.push(`/${room_id}/out`);
     };
 
     window.leaveRoom = leaveRoom;
@@ -293,6 +376,29 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
 
     window.sendMessage = sendMessage;
 
+    const letEnter = (socketId) => {
+        socket.emit("knock-response", socketId);
+        setKnockRequests([
+            ...knockRequests.filter((item) => item[0] !== socketId),
+        ]);
+    };
+
+    window.letEnter = letEnter;
+
+    const handleRejectRequest = (socketId) => {
+        setKnockRequests([
+            ...knockRequests.filter((item) => item[0] !== socketId),
+        ]);
+    };
+
+    window.letEnter = letEnter;
+
+    const lockRoom = () => {
+        socket.emit("lock-room", room_id);
+    };
+
+    window.lockRoom = lockRoom;
+
     const toggleMute = () => {
         const isMuted = !currentUserStream.getAudioTracks()[0].enabled;
 
@@ -325,6 +431,35 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
 
     return (
         <>
+            {roomOwner && (
+                <LockContainer onClick={lockRoom}>
+                    {roomLocked ? <FaLock /> : <FaUnlock />}
+                </LockContainer>
+            )}
+
+            {knockRequests &&
+                roomOwner &&
+                knockRequests.map((request, index) => (
+                    <KockModal key={request} index={index}>
+                        {request[1] || "Anônimo"} deseja entrar no papo
+                        <Flex>
+                            <Button
+                                onClick={() => letEnter(request[0])}
+                                outlined
+                                margin="16px 10px 0 0"
+                            >
+                                Permitir
+                            </Button>
+                            <Button
+                                onClick={() => handleRejectRequest(request[0])}
+                                margin="16px 0 0 0"
+                            >
+                                Negar
+                            </Button>
+                        </Flex>
+                    </KockModal>
+                ))}
+
             <VideoControls>
                 <Flex margin="auto">
                     <RoundedButton muted={audioMuted} onClick={toggleMute}>
@@ -343,6 +478,7 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
                         <FaDesktop />
                     </RoundedButton>
                 </Flex>
+
                 <LeaveButton onClick={handleLeaveRoom}>
                     <span>Sair</span> <FaSignOutAlt />
                 </LeaveButton>
@@ -405,96 +541,6 @@ const answerCall = (call, stream, myId) => {
     });
 };
 
-function addVideoStream(video, stream, userId, userName) {
-    if (document.getElementById(userId)) return;
-
-    video.srcObject = stream;
-    video.addEventListener("loadedmetadata", () => {
-        video.play();
-    });
-
-    let video_container = document.createElement("div");
-    let id_text = document.createElement("p");
-    let user_text = document.createElement("p");
-
-    id_text.innerHTML = userId;
-    id_text.className = "user_id";
-
-    user_text.innerHTML = userName;
-    user_text.className = "user_name";
-
-    video_container.className = "video_container";
-
-    video_container.id = userId;
-    video_container.append(video);
-    video_container.append(id_text);
-    video_container.append(user_text);
-
-    video_container.ondblclick = (e) => setFocus(e.target.id);
-
-    document.getElementById("video_grid").append(video_container);
-
-    return video_container;
-}
-
-const setFocus = (focus_id) => {
-    console.log("focusing on: " + focus_id);
-
-    let focus_element = document.getElementById(focus_id);
-    let minimized_list = document.getElementById("minimized_list");
-    let video_grid = document.getElementById("video_grid");
-
-    if (
-        focus_element.parentNode.id !== "video_grid" ||
-        !minimized_list.classList.contains("show")
-    ) {
-        document.querySelectorAll(".video_container").forEach((el) => {
-            if (el.id !== focus_id) {
-                minimized_list.append(el);
-            } else {
-                video_grid.append(el);
-            }
-        });
-    } else {
-        document.querySelectorAll(".video_container").forEach((el) => {
-            video_grid.append(el);
-        });
-    }
-
-    if (minimized_list.childNodes.length > 0) {
-        minimized_list.classList.add("show");
-        video_grid.classList.add("minimized");
-    } else {
-        minimized_list.classList.remove("show");
-        video_grid.classList.remove("minimized");
-    }
-};
-
-window.setFocus = setFocus;
-
-//create your forceUpdate hook
-function useForceUpdate() {
-    const [value, setValue] = useState(0); // integer state
-
-    return () => setValue((value) => ++value); // update the state to force render
-}
-
-const replaceSenderTrack = (peerConnections, stream, elementRef) => {
-    let videoTrack = stream.getVideoTracks()[0];
-
-    peerConnections.forEach((item, index) => {
-        if (!item) return;
-
-        let sender = item.getSenders().find(function (s) {
-            return s.track.kind === videoTrack.kind;
-        });
-
-        sender.replaceTrack(videoTrack);
-    });
-
-    if (elementRef.current) elementRef.current.srcObject = stream;
-};
-
 export default Connection;
 
 const VideoControls = styled.div`
@@ -510,36 +556,6 @@ const VideoControls = styled.div`
     align-items: center;
 
     padding: 1rem;
-`;
-
-const RoundedButton = styled.button`
-    background-color: #fff;
-    width: 48px;
-    height: 48px;
-    font-size: 18px;
-    border-radius: 100%;
-    border: none;
-    box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-
-    :hover {
-        opacity: 0.7;
-    }
-
-    :not(:last-child) {
-        margin-right: 1rem;
-    }
-
-    ${(props) =>
-        props.muted &&
-        css`
-            background-color: #fb5555;
-            color: #fff;
-        `}
 `;
 
 const LeaveButton = styled.button`
@@ -560,4 +576,38 @@ const LeaveButton = styled.button`
     & > :not(:first-child) {
         margin-left: 8px;
     }
+`;
+
+const LockContainer = styled.button`
+    position: absolute;
+    top: 80px;
+    right: 0;
+    background: #fff;
+    width: 48px;
+    height: 48px;
+    margin: 10px;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
+    border: none;
+    cursor: pointer;
+`;
+
+const KockModal = styled.div`
+    position: absolute;
+    top: ${(props) => `${140 + props.index * 120}`}px;
+    right: 0;
+    background: #fff;
+    margin: 10px;
+    font-size: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
+    padding: 14px 10px;
 `;

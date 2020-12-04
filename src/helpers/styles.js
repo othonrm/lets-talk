@@ -44,8 +44,9 @@ export const GlobalStyle = createGlobalStyle`
         align-items: flex-start;
     }
 
-    h1 {
-        margin-bottom: auto;
+    h1, h2, h3, h4, h5 {
+        color: #444;
+        text-align: center;
     }
 
 `;

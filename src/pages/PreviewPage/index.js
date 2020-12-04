@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import io from "socket.io-client";
 
-import styled, { css } from "styled-components";
+import styled from "styled-components";
 import { Flex } from "../../helpers/styles";
 
 import {
@@ -11,6 +12,10 @@ import {
     FaVideoSlash,
 } from "react-icons/fa";
 
+import RoundedButton from "../../components/RoundedButton";
+import Button from "../../components/Button";
+import AudioLevels from "../../components/AudioLevels";
+
 import logo from "../../assets/images/letstalk-logo.png";
 
 const Container = styled(Flex)`
@@ -18,14 +23,14 @@ const Container = styled(Flex)`
     padding-top: 112px;
 `;
 
-const Logo = styled.img.attrs(() => ({
+const HeaderLogo = styled.img.attrs(() => ({
     src: logo,
+    height: "62px",
 }))`
     position: absolute;
     top: 2rem;
     left: 50%;
     transform: translateX(-50%);
-    height: 62px;
 `;
 
 const VideoContainer = styled.div`
@@ -62,38 +67,6 @@ const NoVideo = styled.div`
     color: #fff;
 `;
 
-const AudioContainer = styled.div`
-    background-color: transparent;
-    position: absolute;
-    bottom: 0px;
-    left: 0px;
-    margin: 1rem;
-    height: 40px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-`;
-
-const AudioBar = styled.div`
-    background-color: #3ccd39;
-    width: 8px;
-    height: 8px;
-    border-radius: 10px;
-
-    transition: height 0.025s linear;
-
-    :not(:last-child) {
-        margin-right: 4px;
-    }
-
-    ${(props) =>
-        props.muted &&
-        css`
-            background-color: #d1d1d1;
-        `}
-`;
-
 const ControlsContainer = styled.div`
     background-color: transparent;
     position: absolute;
@@ -108,38 +81,6 @@ const ControlsContainer = styled.div`
     justify-content: center;
 `;
 
-const MuteButton = styled.button`
-    background-color: #fff;
-    width: 48px;
-    height: 48px;
-    font-size: 18px;
-    border-radius: 100%;
-    border: none;
-    box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-
-    :hover {
-        opacity: 0.7;
-    }
-
-    :not(:last-child) {
-        margin-right: 1rem;
-    }
-
-    ${(props) =>
-        props.muted &&
-        css`
-            background-color: #fb5555;
-            color: #fff;
-        `}
-`;
-
-const VideoButton = styled(MuteButton)``;
-
 const TextInput = styled.input`
     font-size: 18px;
     padding: 8px 16px;
@@ -150,45 +91,41 @@ const TextInput = styled.input`
     width: 320px;
 `;
 
-const ContinueButton = styled.button`
-    border: none;
-    background: rgb(55, 38, 176);
-    background: linear-gradient(
-        180deg,
-        rgba(55, 38, 176, 1) 0%,
-        rgba(193, 105, 213, 1) 100%
+let socket;
+
+const connectSocket = (handleEnterRoom) => {
+    socket = io(
+        process.env.NODE_ENV === "development" ? "localhost:8080" : "/"
     );
-    box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
-    cursor: pointer;
 
-    text-decoration: none;
-    padding: 0.5rem 2rem;
-    border-radius: 8px;
-    margin-top: 1.5rem;
-    color: #fff;
-    font-size: 17px;
+    socket.on("allowed-to-enter", (allowed, pass) => {
+        console.log("allowed-to-enter: " + allowed, pass);
 
-    ${(props) =>
-        props.disabled &&
-        css`
-            opacity: 0.7;
-            pointer-events: none;
-        `}
-`;
+        if (pass !== undefined) {
+            localStorage.setItem(`locked_room_pass`, pass);
+        } else {
+            localStorage.removeItem(`locked_room_pass`);
+        }
+
+        if (allowed) {
+            handleEnterRoom();
+        }
+    });
+};
 
 function PreviewPage({ ready, setReady, ...props }) {
     const { room_id } = useParams();
     const { getUserMedia } = navigator.mediaDevices;
 
     const [currentUserStream, setCurrentUserStream] = useState(undefined);
-    const [audioLevel, setAudioLevel] = useState(0);
     const [audioMuted, setAudioMuted] = useState(false);
     const [videoDisabled, setVideoDisabled] = useState(false);
     const [name, setName] = useState(localStorage.user_name || "");
-
-    const audioBarsRefs = [useRef(null), useRef(null), useRef(null)];
+    const [knocking, setKnocking] = useState(false);
 
     useEffect(() => {
+        connectSocket(handleEnterRoom);
+
         let userMediaStream;
         const video = document.getElementById("user_video");
 
@@ -201,19 +138,19 @@ function PreviewPage({ ready, setReady, ...props }) {
                 setCurrentUserStream(media_stream);
                 setAudioMuted(false);
                 setVideoDisabled(false);
-                setAudioLevel(0);
 
                 video.muted = true;
                 video.srcObject = media_stream;
                 video.addEventListener("loadedmetadata", () => {
                     video.play();
                 });
-
-                audioLevels(media_stream, setAudioLevel, audioBarsRefs);
+                video.style.transform = "scaleX(-1)";
             })
             .catch((reason) => alert("Cannot get video because: " + reason));
 
         return () => {
+            socket && socket.destroy();
+
             userMediaStream &&
                 userMediaStream.getTracks().forEach(function (track) {
                     track.stop();
@@ -224,8 +161,12 @@ function PreviewPage({ ready, setReady, ...props }) {
     }, []);
 
     const handleChange = (e) => {
-        setName(e.target.value);
-        localStorage.setItem("user_name", e.target.value);
+        let tempName = e.target.value.replace(
+            /(?:(?![0-9a-zA-zàáâäãåąčćęèéêëėįìíîïłńòóôöõøùúûüųūÿýżźñçčšžÀÁÂÄÃÅĄĆČĖĘÈÉÊËÌÍÎÏĮŁŃÒÓÔÖÕØÙÚÛÜŲŪŸÝŻŹÑßÇŒÆČŠŽ∂ð |,.'-]).)+/g,
+            ""
+        );
+        setName(tempName);
+        localStorage.setItem("user_name", tempName.trim());
     };
 
     const toggleMute = () => {
@@ -244,11 +185,19 @@ function PreviewPage({ ready, setReady, ...props }) {
 
     const checkNameValidity = () => {
         return name.match(
-            /^[a-zA-zàáâäãåąčćęèéêëėįìíîïłńòóôöõøùúûüųūÿýżźñçčšžÀÁÂÄÃÅĄĆČĖĘÈÉÊËÌÍÎÏĮŁŃÒÓÔÖÕØÙÚÛÜŲŪŸÝŻŹÑßÇŒÆČŠŽ∂ð ,.'-]+$/g
+            /^[0-9a-zA-zàáâäãåąčćęèéêëėįìíîïłńòóôöõøùúûüųūÿýżźñçčšžÀÁÂÄÃÅĄĆČĖĘÈÉÊËÌÍÎÏĮŁŃÒÓÔÖÕØÙÚÛÜŲŪŸÝŻŹÑßÇŒÆČŠŽ∂ð |,.'-]+$/g
         );
     };
 
-    const handleEnterRoom = () => {
+    const knockRoom = () => {
+        setKnocking(true);
+
+        socket.emit("knock-room", room_id, name);
+    };
+
+    window.knockRoom = knockRoom;
+
+    const handleRequestToEnter = () => {
         if (
             !name ||
             name.toString().trim().length === 0 ||
@@ -256,12 +205,22 @@ function PreviewPage({ ready, setReady, ...props }) {
         )
             return;
 
+        knockRoom();
+    };
+
+    const handleEnterRoom = () => {
         setReady(true);
+    };
+
+    window.handleEnterRoom = handleEnterRoom;
+
+    const handleGiveUpKnocking = () => {
+        window.location.reload();
     };
 
     return (
         <Container direction="column">
-            <Logo />
+            <HeaderLogo />
 
             <VideoContainer>
                 {!currentUserStream && (
@@ -278,107 +237,104 @@ function PreviewPage({ ready, setReady, ...props }) {
                 <video id="user_video" />
 
                 {currentUserStream && (
-                    <AudioContainer>
-                        <AudioBar
-                            ref={audioBarsRefs[0]}
-                            muted={audioMuted}
-                            level={audioLevel}
-                        />
-                        <AudioBar
-                            ref={audioBarsRefs[1]}
-                            muted={audioMuted}
-                            level={audioLevel}
-                        />
-                        <AudioBar
-                            ref={audioBarsRefs[2]}
-                            muted={audioMuted}
-                            level={audioLevel}
-                        />
-                    </AudioContainer>
+                    <AudioLevels
+                        muted={audioMuted}
+                        mediaStream={currentUserStream}
+                    />
                 )}
 
                 {currentUserStream && (
                     <ControlsContainer>
-                        <MuteButton muted={audioMuted} onClick={toggleMute}>
+                        <RoundedButton muted={audioMuted} onClick={toggleMute}>
                             {audioMuted ? (
                                 <FaMicrophoneAltSlash />
                             ) : (
                                 <FaMicrophoneAlt />
                             )}
-                        </MuteButton>
-                        <VideoButton
+                        </RoundedButton>
+                        <RoundedButton
                             muted={videoDisabled}
                             onClick={toggleVideo}
                         >
                             {videoDisabled ? <FaVideoSlash /> : <FaVideo />}
-                        </VideoButton>
+                        </RoundedButton>
                     </ControlsContainer>
                 )}
             </VideoContainer>
 
-            <Flex direction="column" margin="30px 0 0 0">
-                <Flex margin="0 0 16px 0">
-                    <h1>Tudo pronto para conectar?</h1>
-                </Flex>
-                <p>Sala: {room_id}</p>
+            {!knocking ? (
+                <>
+                    <Flex direction="column" margin="30px 0 0 0">
+                        <Flex margin="0 0 16px 0">
+                            <h1>Tudo pronto para conectar?</h1>
+                        </Flex>
+                        <p>Sala: {room_id}</p>
 
-                <Flex margin="32px 0 ">
-                    <TextInput
-                        name="user_name"
-                        value={name}
-                        onChange={(e) => handleChange(e)}
-                        placeholder="Digite seu nome"
-                        pattern="[a-zA-Z]"
-                    />
-                </Flex>
+                        <Flex direction="column" margin="32px 0 10px 0">
+                            <TextInput
+                                name="user_name"
+                                value={name}
+                                onChange={(e) => handleChange(e)}
+                                placeholder="Digite seu nome"
+                                pattern="[a-zA-Z]"
+                            />
+                        </Flex>
 
-                <Flex margin="0 0 16px 0">
-                    <ContinueButton
-                        disabled={!checkNameValidity()}
-                        onClick={handleEnterRoom}
-                    >
-                        Entrar no papo
-                    </ContinueButton>
-                </Flex>
-            </Flex>
+                        <Flex direction="column" margin="10px 0 32px 0">
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    name="skip"
+                                    defaultChecked={
+                                        localStorage.getItem(
+                                            "skip_" + room_id
+                                        ) === "true"
+                                    }
+                                    onChange={(e) =>
+                                        localStorage.setItem(
+                                            "skip_" + room_id,
+                                            e.target.checked
+                                        )
+                                    }
+                                />
+                                Pular próxima entrada nesta sala
+                            </label>
+                        </Flex>
+
+                        <Flex margin="0 0 16px 0">
+                            <Button
+                                disabled={!checkNameValidity()}
+                                onClick={handleRequestToEnter}
+                            >
+                                Entrar no papo
+                            </Button>
+                        </Flex>
+                    </Flex>
+                </>
+            ) : (
+                <>
+                    <Flex direction="column" margin="30px 0 0 0">
+                        <Flex margin="0 0 16px 0">
+                            <h1>
+                                Estamos avisando o pessoal que você quer entrar
+                                no papo
+                            </h1>
+                        </Flex>
+                        <p>
+                            Aguarde alguém aprovar sua entrada, não é legal
+                            atravessar a conversa de ninguém...
+                        </p>
+
+                        <Flex margin="0 0 16px 0">
+                            <Button onClick={handleGiveUpKnocking}>
+                                Desistir
+                            </Button>
+                        </Flex>
+                    </Flex>
+                </>
+            )}
         </Container>
     );
 }
-
-const audioLevels = (media_stream, setAudioLevel, audioBarsRefs) => {
-    let audioContext = new AudioContext(); // NEW!!
-    let analyser = audioContext.createAnalyser();
-    let microphone = audioContext.createMediaStreamSource(media_stream);
-    let javascriptNode = audioContext.createScriptProcessor(2048, 1, 1);
-
-    analyser.smoothingTimeConstant = 0.3;
-    analyser.fftSize = 1024;
-
-    microphone.connect(analyser);
-    analyser.connect(javascriptNode);
-    javascriptNode.connect(audioContext.destination);
-
-    javascriptNode.onaudioprocess = function () {
-        var array = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(array);
-        var values = 0;
-
-        var length = array.length;
-        for (var i = 0; i < length; i++) {
-            values += array[i];
-        }
-
-        var average = values / length;
-
-        setAudioLevel(average);
-
-        audioBarsRefs.forEach((bar, index) => {
-            if (bar && bar.current)
-                bar.current.style.height = `${
-                    8 + average / (index === 1 ? 2 : 5)
-                }px`;
-        });
-    };
-};
 
 export default PreviewPage;

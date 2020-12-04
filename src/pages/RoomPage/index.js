@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import styled, { css } from "styled-components";
+import styled from "styled-components";
 
 import Connection from "../../services/connection";
 // import "../../services/old_connection";
@@ -7,6 +7,7 @@ import PreviewPage from "../PreviewPage";
 
 import logo from "../../assets/images/letstalk-logo.png";
 import { Flex } from "../../helpers/styles";
+import { useParams } from "react-router-dom";
 
 const Logo = styled.img.attrs(() => ({
     src: logo,
@@ -139,12 +140,15 @@ const MinimizedVideoList = styled.div.attrs(() => ({
 `;
 
 function RoomPage() {
-    const [ready, setReady] = useState(false);
-    const [disconnected, setDisconnected] = useState(false);
+    const { room_id } = useParams();
+
+    const [ready, setReady] = useState(
+        localStorage.getItem("skip_" + room_id) === "true" &&
+            (localStorage.getItem("user_name") || "").length > 0
+    );
 
     const handleLeaveRoom = () => {
         setReady(false);
-        setDisconnected(true);
 
         window.leaveRoom();
     };
