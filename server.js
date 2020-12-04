@@ -67,16 +67,40 @@ app.get("/*", function (req, res) {
     res.sendFile(path.join(__dirname, "build", "index.html"));
 });
 
+let rooms = {};
+
 io.on("connection", (socket) => {
-    socket.on("join-room", (roomId, userId) => {
+    socket.on("join-room", (roomId, userId, userName) => {
+        rooms = {
+            ...rooms,
+            [roomId]: [
+                ...(rooms[roomId] || []),
+                { id: userId, name: userName },
+            ],
+        };
+
+        console.log(rooms);
+
         console.log(`User: ${userId}, Joined Room: ${roomId}`);
 
         socket.join(roomId);
 
-        socket.to(roomId).broadcast.emit("user-connected", userId);
+        socket.to(roomId).broadcast.emit("user-connected", userId, userName);
 
         socket.on("disconnect", () => {
             socket.to(roomId).broadcast.emit("user-disconnected", userId);
+
+            if (rooms[roomId]) {
+                rooms[roomId] = [
+                    ...rooms[roomId].filter((item) => item.id !== userId),
+                ];
+
+                if (rooms[roomId].length === 0) {
+                    delete rooms[roomId];
+                }
+            }
+
+            console.log(rooms);
         });
 
         socket.on("message", (msg) => {

@@ -26,7 +26,6 @@ export const GlobalStyle = createGlobalStyle`
     body {
         padding: 0px;
         margin: 0px;
-        background-color: rgb(245, 245, 245);
 
         font-family: 'Roboto', sans-serif;
     }
@@ -34,6 +33,7 @@ export const GlobalStyle = createGlobalStyle`
     html,
     body {
         height: -webkit-fill-available;
+        background-color: rgb(245, 245, 245);
     }
 
     #root {

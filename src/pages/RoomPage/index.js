@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
 import Connection from "../../services/connection";
 // import "../../services/old_connection";
@@ -31,6 +31,7 @@ const Container = styled(Flex)`
 const VideoGrid = styled(Flex).attrs(() => ({
     id: "video_grid",
 }))`
+    position: relative;
     height: 100%;
     width: 100%;
     flex: 1;
@@ -57,7 +58,17 @@ const VideoGrid = styled(Flex).attrs(() => ({
         grid-template-columns: repeat(auto-fit, minmax(calc(48% - 60px), 1fr));
     }
 
-    & > div {
+    &.minimized {
+        padding-right: 300px;
+
+        & > .video_container {
+            max-width: 100%;
+            max-height: 100%;
+        }
+    }
+
+    .video_container {
+        position: relative;
         margin: auto;
         width: 100%;
         height: 100%;
@@ -68,39 +79,88 @@ const VideoGrid = styled(Flex).attrs(() => ({
         max-width: 60vw;
         border-radius: 10px;
         box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.36);
-    }
+        cursor: pointer;
+        background-color: #111;
 
-    video {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border: none;
-        background-color: transparent;
-        margin: 0px;
-        box-sizing: border-box;
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border: none;
+            background-color: transparent;
+            margin: 0px;
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+
+        .user_id {
+            display: none;
+            pointer-events: none;
+        }
+
+        .user_name {
+            position: absolute;
+            bottom: 0px;
+            margin: 10px;
+            left: 0px;
+            background-color: rgb(0 0 0 / 58%);
+            color: #fff;
+            padding: 6px;
+            text-transform: capitalize;
+            border-radius: 6px;
+            pointer-events: none;
+        }
     }
 `;
 
-const VideoControls = styled.div`
-    width: 100%;
-    height: 80px;
+const MinimizedVideoList = styled.div.attrs(() => ({
+    id: "minimized_list",
+}))`
+    background-color: transparent;
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    right: 0px;
+    box-sizing: border-box;
+
+    width: 0px;
+    display: flex;
+    flex-direction: column;
+
+    &.show {
+        width: 300px;
+        padding: 1rem;
+    }
+
+    .video_container {
+        max-width: 100%;
+        max-height: 200px;
+    }
 `;
 
 function RoomPage() {
     const [ready, setReady] = useState(false);
+    const [disconnected, setDisconnected] = useState(false);
+
+    const handleLeaveRoom = () => {
+        setReady(false);
+        setDisconnected(true);
+
+        window.leaveRoom();
+    };
 
     return (
         <>
-            {ready ? (
+            {ready === true ? (
                 <>
                     <Logo />
 
-                    <Connection />
-
                     <Container>
-                        <VideoGrid />
+                        <VideoGrid>
+                            <MinimizedVideoList />
+                        </VideoGrid>
 
-                        <VideoControls />
+                        <Connection handleLeaveRoom={handleLeaveRoom} />
                     </Container>
                 </>
             ) : (

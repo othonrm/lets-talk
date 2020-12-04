@@ -4,6 +4,13 @@ import { useParams } from "react-router-dom";
 import styled, { css } from "styled-components";
 import { Flex } from "../../helpers/styles";
 
+import {
+    FaMicrophoneAlt,
+    FaMicrophoneAltSlash,
+    FaVideo,
+    FaVideoSlash,
+} from "react-icons/fa";
+
 import logo from "../../assets/images/letstalk-logo.png";
 
 const Container = styled(Flex)`
@@ -105,7 +112,7 @@ const MuteButton = styled.button`
     background-color: #fff;
     width: 48px;
     height: 48px;
-
+    font-size: 18px;
     border-radius: 100%;
     border: none;
     box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
@@ -133,6 +140,16 @@ const MuteButton = styled.button`
 
 const VideoButton = styled(MuteButton)``;
 
+const TextInput = styled.input`
+    font-size: 18px;
+    padding: 8px 16px;
+    /* border-radius: 6px; */
+    background-color: transparent;
+    border: none;
+    border-bottom: 2px solid #333;
+    width: 320px;
+`;
+
 const ContinueButton = styled.button`
     border: none;
     background: rgb(55, 38, 176);
@@ -150,6 +167,13 @@ const ContinueButton = styled.button`
     margin-top: 1.5rem;
     color: #fff;
     font-size: 17px;
+
+    ${(props) =>
+        props.disabled &&
+        css`
+            opacity: 0.7;
+            pointer-events: none;
+        `}
 `;
 
 function PreviewPage({ ready, setReady, ...props }) {
@@ -158,8 +182,9 @@ function PreviewPage({ ready, setReady, ...props }) {
 
     const [currentUserStream, setCurrentUserStream] = useState(undefined);
     const [audioLevel, setAudioLevel] = useState(0);
-    const [muted, setMuted] = useState(false);
+    const [audioMuted, setAudioMuted] = useState(false);
     const [videoDisabled, setVideoDisabled] = useState(false);
+    const [name, setName] = useState(localStorage.user_name || "");
 
     const audioBarsRefs = [useRef(null), useRef(null), useRef(null)];
 
@@ -174,7 +199,7 @@ function PreviewPage({ ready, setReady, ...props }) {
             .then((media_stream) => {
                 userMediaStream = media_stream;
                 setCurrentUserStream(media_stream);
-                setMuted(false);
+                setAudioMuted(false);
                 setVideoDisabled(false);
                 setAudioLevel(0);
 
@@ -198,11 +223,16 @@ function PreviewPage({ ready, setReady, ...props }) {
         // eslint-disable-next-line
     }, []);
 
+    const handleChange = (e) => {
+        setName(e.target.value);
+        localStorage.setItem("user_name", e.target.value);
+    };
+
     const toggleMute = () => {
         currentUserStream.getAudioTracks()[0].enabled = !currentUserStream.getAudioTracks()[0]
             .enabled;
 
-        setMuted(!currentUserStream.getAudioTracks()[0].enabled);
+        setAudioMuted(!currentUserStream.getAudioTracks()[0].enabled);
     };
 
     const toggleVideo = () => {
@@ -212,7 +242,20 @@ function PreviewPage({ ready, setReady, ...props }) {
         setVideoDisabled(!currentUserStream.getVideoTracks()[0].enabled);
     };
 
+    const checkNameValidity = () => {
+        return name.match(
+            /^[a-zA-zàáâäãåąčćęèéêëėįìíîïłńòóôöõøùúûüųūÿýżźñçčšžÀÁÂÄÃÅĄĆČĖĘÈÉÊËÌÍÎÏĮŁŃÒÓÔÖÕØÙÚÛÜŲŪŸÝŻŹÑßÇŒÆČŠŽ∂ð ,.'-]+$/g
+        );
+    };
+
     const handleEnterRoom = () => {
+        if (
+            !name ||
+            name.toString().trim().length === 0 ||
+            !checkNameValidity()
+        )
+            return;
+
         setReady(true);
     };
 
@@ -238,17 +281,17 @@ function PreviewPage({ ready, setReady, ...props }) {
                     <AudioContainer>
                         <AudioBar
                             ref={audioBarsRefs[0]}
-                            muted={muted}
+                            muted={audioMuted}
                             level={audioLevel}
                         />
                         <AudioBar
                             ref={audioBarsRefs[1]}
-                            muted={muted}
+                            muted={audioMuted}
                             level={audioLevel}
                         />
                         <AudioBar
                             ref={audioBarsRefs[2]}
-                            muted={muted}
+                            muted={audioMuted}
                             level={audioLevel}
                         />
                     </AudioContainer>
@@ -256,14 +299,18 @@ function PreviewPage({ ready, setReady, ...props }) {
 
                 {currentUserStream && (
                     <ControlsContainer>
-                        <MuteButton muted={muted} onClick={toggleMute}>
-                            M
+                        <MuteButton muted={audioMuted} onClick={toggleMute}>
+                            {audioMuted ? (
+                                <FaMicrophoneAltSlash />
+                            ) : (
+                                <FaMicrophoneAlt />
+                            )}
                         </MuteButton>
                         <VideoButton
                             muted={videoDisabled}
                             onClick={toggleVideo}
                         >
-                            V
+                            {videoDisabled ? <FaVideoSlash /> : <FaVideo />}
                         </VideoButton>
                     </ControlsContainer>
                 )}
@@ -274,8 +321,22 @@ function PreviewPage({ ready, setReady, ...props }) {
                     <h1>Tudo pronto para conectar?</h1>
                 </Flex>
                 <p>Sala: {room_id}</p>
+
+                <Flex margin="32px 0 ">
+                    <TextInput
+                        name="user_name"
+                        value={name}
+                        onChange={(e) => handleChange(e)}
+                        placeholder="Digite seu nome"
+                        pattern="[a-zA-Z]"
+                    />
+                </Flex>
+
                 <Flex margin="0 0 16px 0">
-                    <ContinueButton onClick={handleEnterRoom}>
+                    <ContinueButton
+                        disabled={!checkNameValidity()}
+                        onClick={handleEnterRoom}
+                    >
                         Entrar no papo
                     </ContinueButton>
                 </Flex>
