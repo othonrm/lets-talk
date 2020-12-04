@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useHistory } from "react-router-dom";
 import styled from "styled-components";
 import { v4 as uuidv4 } from "uuid";
@@ -58,19 +58,39 @@ const TabletContainer = styled.div`
         max-width: 100%;
         margin-left: auto;
         margin-right: auto;
+
+        order: -1;
+
+        margin-bottom: 32px;
     }
+`;
+
+const TextInput = styled.input`
+    font-size: 18px;
+    padding: 8px 16px;
+    background-color: transparent;
+    border: none;
+    border-bottom: 2px solid #333;
+    width: 100%;
 `;
 
 function HomePage() {
     const history = useHistory();
 
+    const [roomName, setRoomName] = useState();
+
     const handleCreateNewRoom = () => {
         history.push(`/${uuidv4()}`);
+    };
+
+    const handleEnterRoom = () => {
+        history.push(`/${roomName}`);
     };
 
     return (
         <Flex
             width="85%"
+            height="100%"
             alignSelf="center"
             alignItems={window.innerWidth < 1068 ? "center" : "flex-start"}
             direction="column"
@@ -80,33 +100,52 @@ function HomePage() {
 
             <Flex
                 width="100%"
+                height="100%"
                 direction={window.innerWidth < 1068 ? "column" : "row"}
             >
-                <Container
+                <Flex
+                    flex="1"
+                    width="50%"
                     direction="column"
-                    alignItems={
-                        window.innerWidth < 1068 ? "center" : "flex-start"
-                    }
-                    margin="0 0 32px 0"
+                    alignItems={"flex-start"}
                 >
-                    <h1>
-                        O que está esperando <br />
-                        para começar um papo? Não custa nada!
-                    </h1>
-                    <h3>
-                        Começe criando uma nova reunião e envie o link para seus
-                        amigos, ou acesse usando um código/link.
-                    </h3>
-                    <Button
-                        padding="12px 0"
-                        minWidth="200px"
-                        margin="0"
-                        onClick={handleCreateNewRoom}
+                    <Container
+                        direction="column"
+                        alignItems={
+                            window.innerWidth < 1068 ? "center" : "flex-start"
+                        }
+                        margin="0 0 32px 0"
                     >
-                        <FaVideo />
-                        <span>Novo papo</span>
-                    </Button>
-                </Container>
+                        <h1>
+                            O que está esperando <br />
+                            para começar um papo? Não custa nada!
+                        </h1>
+                        <h3>
+                            Começe criando uma nova reunião e envie o link para
+                            seus amigos, ou acesse usando um código/link.
+                        </h3>
+                    </Container>
+                    <Flex justifyContent="flex-start" width="100%">
+                        <Button
+                            padding="12px 0"
+                            minWidth="200px"
+                            margin="0 32px 0 0"
+                            onClick={handleCreateNewRoom}
+                        >
+                            <FaVideo />
+                            <span>Novo papo</span>
+                        </Button>
+
+                        <form onSubmit={handleEnterRoom}>
+                            <TextInput
+                                name="room_name"
+                                value={roomName}
+                                onChange={(e) => setRoomName(e.target.value)}
+                                placeholder="Nome da sala"
+                            />
+                        </form>
+                    </Flex>
+                </Flex>
 
                 <TabletContainer>
                     <img src={people_grid} alt="Pessoas" />
