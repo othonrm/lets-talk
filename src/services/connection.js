@@ -37,6 +37,8 @@ const Connection = () => {
     const [currentUserStream, setCurrentUserStream] = useState(undefined);
     const [myId, setMyId] = useState(undefined);
     const [connected, setConnected] = useState(socket && socket.connected);
+    const [sharingScreen, setSharingScreen] = useState(undefined);
+    const [currentDisplayStream, setCurrentDisplayStream] = useState(undefined);
 
     const myVideoRef = useRef(myVideoElement);
 
@@ -108,10 +110,117 @@ const Connection = () => {
         setPeerEvents();
     };
 
+    const stopScreenShare = () => {
+        let videoTrack = currentUserStream.getVideoTracks()[0];
+
+        let peerConnections = Object.values({
+            ...connectedUsers,
+        }).reduce((acc, curr) => {
+            return [...acc, curr.peerConnection];
+        }, []);
+
+        peerConnections.forEach((item, index) => {
+            if (!item) return;
+
+            let sender = item.getSenders().find(function (s) {
+                return s.track.kind === videoTrack.kind;
+            });
+
+            sender.replaceTrack(videoTrack);
+        });
+        if (myVideoRef.current)
+            myVideoRef.current.srcObject = currentUserStream;
+    };
+
+    const screenShare = () => {
+        navigator.mediaDevices
+            .getDisplayMedia({
+                video: true,
+                audio: false,
+            })
+            .then((display_stream) => {
+                let videoTrack = display_stream.getVideoTracks()[0];
+
+                videoTrack.onended = function () {
+                    stopScreenShare(display_stream);
+                };
+
+                let peerConnections = Object.values({
+                    ...connectedUsers,
+                }).reduce((acc, curr) => {
+                    return [...acc, curr.peerConnection];
+                }, []);
+
+                peerConnections.forEach((item, index) => {
+                    if (!item) return;
+
+                    let sender = item.getSenders().find(function (s) {
+                        return s.track.kind === videoTrack.kind;
+                    });
+
+                    sender.replaceTrack(videoTrack);
+                });
+
+                if (myVideoRef.current)
+                    myVideoRef.current.srcObject = display_stream;
+            })
+            .catch((reason) => alert("Cannot get display because: " + reason));
+    };
+
+    useEffect(() => {
+        console.log(
+            sharingScreen,
+            currentDisplayStream,
+            peer && peer.connected
+        );
+
+        if (
+            sharingScreen &&
+            currentDisplayStream &&
+            socket &&
+            !socket.connected
+        ) {
+            console.log("reconnecting peer");
+
+            peer.removeAllListeners("call");
+
+            peer.on("call", (call) => {
+                console.log("receiving call", call);
+
+                if (sharingScreen && currentDisplayStream) {
+                    console.log("answering with display stream");
+
+                    answerCall(call, currentDisplayStream, myId);
+                } else {
+                    const checkMyStream = () => {
+                        if (!currentUserStream) {
+                            console.log("waiting media stream 1");
+                            setTimeout(checkMyStream, 100);
+                        } else {
+                            answerCall(call, currentUserStream, myId);
+                        }
+                    };
+
+                    checkMyStream();
+                }
+            });
+
+            socket.connect();
+        }
+    }, [sharingScreen, currentDisplayStream]);
+
+    window.connectedUsers = connectedUsers;
+
+    window.screenShare = screenShare;
+
     const setSocketEvents = () => {
         socket.on("connect", function () {
             console.log("CONNECTED");
             setConnected(socket.connected);
+
+            if (peer.disconnected) {
+                peer.reconnect();
+            }
         });
 
         socket.on("user-connected", (userId) => {
@@ -155,6 +264,12 @@ const Connection = () => {
         });
 
         peer.on("call", (call) => {
+            console.log("receiving call", call);
+
+            if (sharingScreen && currentDisplayStream) {
+                console.log("answer call with sharing display stream");
+            }
+
             const checkMyStream = () => {
                 if (!currentUserStream) {
                     console.log("waiting media stream 1");
@@ -199,7 +314,7 @@ const Connection = () => {
     return null;
 };
 
-const connectToNewUser = (userId, stream) => {
+const connectToNewUser = (userId, stream, screen_share = false) => {
     console.log("making call");
 
     const call = peer.call(userId, stream);
@@ -211,6 +326,8 @@ const connectToNewUser = (userId, stream) => {
         addVideoStream(video, callStream, userId, call.peer);
 
         connectedUsers[userId] = call;
+
+        console.log(call);
 
         window.forceUpdate && window.forceUpdate();
     });
@@ -237,7 +354,13 @@ const answerCall = (call, stream, myId) => {
         connectedUsers[call.peer] = call;
     });
 
+    call.on("disconnected", () => {
+        console.log("call is disconnected");
+        userContainer && userContainer.remove();
+    });
+
     call.on("close", () => {
+        console.log("call is closing");
         userContainer && userContainer.remove();
     });
 };

@@ -87,7 +87,7 @@ const VideoControls = styled.div`
 `;
 
 function RoomPage() {
-    const [ready, setReady] = useState(!false);
+    const [ready, setReady] = useState(false);
 
     return (
         <>
