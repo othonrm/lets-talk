@@ -192,6 +192,7 @@ const RoundedButton = styled(Rounded)`
     top: 0px;
     right: 0px;
     margin: 10px !important;
+    z-index: 5;
 `;
 
 function RoomPage() {
