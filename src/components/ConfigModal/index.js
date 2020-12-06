@@ -10,7 +10,7 @@ import Button from "../Button";
 import { Flex } from "../../helpers/styles";
 
 const Backdrop = styled.div`
-    position: absolute;
+    position: fixed;
     top: 0px;
     bottom: 0px;
     left: 0px;
@@ -24,7 +24,7 @@ const Container = styled(Flex)`
     width: 400px;
     max-width: 80vw;
     height: auto;
-    position: absolute;
+    position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -41,6 +41,7 @@ function ConfigModal() {
         audiooutput: localStorage.getItem("audiooutput_device") || undefined,
         videoinput: localStorage.getItem("videoinput_device") || undefined,
     });
+    const bodyElement = document.querySelector("body");
 
     useEffect(() => {
         navigator.mediaDevices
@@ -51,6 +52,10 @@ function ConfigModal() {
             .catch((reason) =>
                 alert("Cannot get media devices because: " + reason)
             );
+
+        return () => {
+            handleClose();
+        };
 
         // eslint-disable-next-line
     }, []);
@@ -83,6 +88,13 @@ function ConfigModal() {
     };
 
     const handleShowModal = () => {
+        let top = window.scrollY;
+
+        bodyElement.style.position = "fixed";
+        bodyElement.style.top = `-${top}px`;
+        bodyElement.style.left = "0px";
+        bodyElement.style.right = "0px";
+
         setActive(true);
     };
     window.showConfigModal = handleShowModal;
@@ -91,6 +103,15 @@ function ConfigModal() {
         setActive(false);
         typeof window.onChangeMediaDevices === "function" &&
             window.onChangeMediaDevices();
+
+        const scrollY = bodyElement.style.top;
+
+        bodyElement.style.position = "";
+        bodyElement.style.top = "";
+        bodyElement.style.left = "";
+        bodyElement.style.right = "";
+
+        window.scrollTo(0, -parseInt(scrollY || "0"));
     };
 
     return (
