@@ -72,7 +72,9 @@ app.get("/*", function (req, res) {
     res.sendFile(path.join(__dirname, "build", "index.html"));
 });
 
-let rooms = {};
+let rooms = {
+    "sala-premium": { owner: "othon", locked: true, users: [] },
+};
 
 let allowed_users = {};
 

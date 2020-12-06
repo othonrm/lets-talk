@@ -24,7 +24,7 @@ const Container = styled.button`
     min-height: ${(props) => props.minHeight && props.minHeight};
     min-width: ${(props) => props.minWidth && props.minWidth};
     color: #fff;
-    font-size: 17px;
+    font-size: ${(props) => (props.small ? "14px" : "17px")};
 
     ${(props) =>
         props.outlined &&
@@ -54,8 +54,20 @@ const Container = styled.button`
     }
 `;
 
-function Button({ ...props }) {
-    return <Container {...props}>{props.children}</Container>;
+function Button({ value, onClick, link, outlined, disabled, small, ...props }) {
+    return (
+        <Container
+            value={value}
+            onClick={onClick}
+            link={link}
+            outlined={outlined}
+            disabled={disabled}
+            small={small}
+            {...props}
+        >
+            {value || props.children}
+        </Container>
+    );
 }
 
 export default Button;

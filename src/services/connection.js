@@ -25,6 +25,7 @@ import RoundedButton from "../components/RoundedButton";
 import enter_room from "../assets/audios/enter_room.mp3";
 import leave_room from "../assets/audios/leave_room.mp3";
 import knocking from "../assets/audios/knocking.mp3";
+import new_message from "../assets/audios/new_message.mp3";
 
 let socket;
 let peer;
@@ -73,18 +74,47 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
     const [connected, setConnected] = useState(socket && socket.connected);
     const [screenSharing, setScreenSharing] = useState(false);
     const [currentDisplayStream, setCurrentDisplayStream] = useState(undefined);
-    const [audioMuted, setAudioMuted] = useState(false);
-    const [videoDisabled, setVideoDisabled] = useState(false);
+    const [audioMuted, setAudioMuted] = useState(
+        localStorage.getItem("audio_enabled") === "false" ? true : false
+    );
+    const [videoDisabled, setVideoDisabled] = useState(
+        localStorage.getItem("video_enabled") === "false" ? true : false
+    );
     const [roomLocked, setRoomLocked] = useState(false);
     const [roomOwner, setRoomOwner] = useState(false);
     const [knockRequests, setKnockRequests] = useState([]);
+    const [unreadCount, setUnreadCount] = useState(0);
 
+    window.onToggleSidePanel = () => {
+        setUnreadCount(0);
+    };
+
+    window.onReceivedMessage = () => {
+        if (!window.sidePanelActive) {
+            setUnreadCount(unreadCount + 1);
+            audioNewMessage.play();
+        }
+    };
+
+    const audiooutput = localStorage.getItem("audiooutput_device");
     const audioEnterRoom = new Audio(enter_room);
     const audioLeaveRoom = new Audio(leave_room);
     const audioKnocking = new Audio(knocking);
+    const audioNewMessage = new Audio(new_message);
     audioEnterRoom.volume = 0.5;
     audioLeaveRoom.volume = 0.5;
     audioKnocking.volume = 0.5;
+    audioNewMessage.volume = 0.5;
+    if (
+        audiooutput !== undefined &&
+        audiooutput !== null &&
+        audiooutput !== ""
+    ) {
+        audioEnterRoom.setSinkId(audiooutput);
+        audioLeaveRoom.setSinkId(audiooutput);
+        audioKnocking.setSinkId(audiooutput);
+        audioNewMessage.setSinkId(audiooutput);
+    }
 
     const myVideoRef = useRef(myVideoElement);
 
@@ -116,6 +146,18 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
                     audio: true,
                 })
                 .then((media_stream) => {
+                    let audio_enabled = localStorage.getItem("audio_enabled");
+                    let video_enabled = localStorage.getItem("video_enabled");
+
+                    if (audio_enabled === "true" || audio_enabled === "false") {
+                        media_stream.getAudioTracks()[0].enabled =
+                            audio_enabled === "true" ? true : false;
+                    }
+                    if (video_enabled === "true" || video_enabled === "false") {
+                        media_stream.getVideoTracks()[0].enabled =
+                            video_enabled === "true" ? true : false;
+                    }
+
                     setCurrentUserStream(media_stream);
 
                     addVideoStream(
@@ -223,11 +265,11 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
     };
 
     const setSocketEvents = () => {
-        socket.on("connect", function () {
+        socket.on("connect", () => {
             setConnected(socket.connected);
         });
 
-        socket.on("disconnect", function (reason) {
+        socket.on("disconnect", (reason) => {
             // leaveRoom();
         });
 
@@ -253,10 +295,6 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
 
             document.getElementById(userId) &&
                 document.getElementById(userId).remove();
-        });
-
-        socket.on("received-message", (msg) => {
-            console.log(msg);
         });
 
         socket.on("room-lock", (roomLockStatus) => {
@@ -320,6 +358,8 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
         currentUserStream &&
             currentUserStream.getTracks().forEach((track) => track.stop());
 
+        history.push(`/${room_id}/out`);
+
         peer && peer.removeAllListeners();
         socket && socket.removeAllListeners();
 
@@ -327,7 +367,7 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
         socket && socket.disconnect();
         socket && socket.close();
 
-        window.location.replace(`/${room_id}/out`);
+        window.location.reload();
     };
 
     window.leaveRoom = leaveRoom;
@@ -425,7 +465,11 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
         window.audioMuted = !currentUserStream.getAudioTracks()[0].enabled;
         setAudioMuted(window.audioMuted);
 
-        socket.emit('toggle-track', 'audio', currentUserStream.getAudioTracks()[0].enabled)
+        socket.emit(
+            "toggle-track",
+            "audio",
+            currentUserStream.getAudioTracks()[0].enabled
+        );
     };
 
     window.toggleMute = toggleMute;
@@ -442,7 +486,11 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
         window.videoDisabled = !currentUserStream.getVideoTracks()[0].enabled;
         setVideoDisabled(window.videoDisabled);
 
-        socket.emit('toggle-track', 'video', currentUserStream.getVideoTracks()[0].enabled)
+        socket.emit(
+            "toggle-track",
+            "video",
+            currentUserStream.getVideoTracks()[0].enabled
+        );
     };
 
     window.toggleVideo = toggleVideo;
@@ -496,7 +544,10 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
                         </RoundedButton>
                     )}
 
-                    <RoundedButton onClick={window.toggleSidePanel}>
+                    <RoundedButton
+                        onClick={window.toggleSidePanel}
+                        badge={unreadCount > 0 ? unreadCount : false}
+                    >
                         <FaUsers />
                     </RoundedButton>
 
@@ -561,12 +612,12 @@ const answerCall = (call, stream, myId) => {
 
     call.on("disconnected", () => {
         delete connectedUsers[call.peer];
-        userContainer && userContainer.remove();
+        userContainer && userContainer.remove && userContainer.remove();
     });
 
     call.on("close", () => {
         delete connectedUsers[call.peer];
-        userContainer && userContainer.remove();
+        userContainer && userContainer.remove && userContainer.remove();
     });
 };
 

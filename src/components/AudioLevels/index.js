@@ -17,7 +17,6 @@ const Container = styled.div`
 const AudioBar = styled.div`
     background-color: #3ccd39;
     width: 8px;
-    height: 8px;
     border-radius: 10px;
 
     transition: height 0.025s linear;
@@ -30,29 +29,33 @@ const AudioBar = styled.div`
         props.muted &&
         css`
             background-color: #d1d1d1;
+            height: 8px !important;
         `}
 `;
 
 function AudioLevels({ muted, mediaStream, props }) {
-    const [audioLevel, setAudioLevel] = useState(0);
     const audioBarsRefs = [useRef(null), useRef(null), useRef(null)];
 
     useEffect(() => {
-        audioLevels(mediaStream, setAudioLevel, audioBarsRefs);
+        let _return = audioLevels(mediaStream, audioBarsRefs);
+
+        return () => {
+            _return();
+        };
 
         // eslint-disable-next-line
-    }, []);
+    }, [mediaStream]);
 
     return (
         <Container>
-            <AudioBar ref={audioBarsRefs[0]} muted={muted} level={audioLevel} />
-            <AudioBar ref={audioBarsRefs[1]} muted={muted} level={audioLevel} />
-            <AudioBar ref={audioBarsRefs[2]} muted={muted} level={audioLevel} />
+            <AudioBar ref={audioBarsRefs[0]} muted={muted === true} />
+            <AudioBar ref={audioBarsRefs[1]} muted={muted === true} />
+            <AudioBar ref={audioBarsRefs[2]} muted={muted === true} />
         </Container>
     );
 }
 
-const audioLevels = (media_stream, setAudioLevel, audioBarsRefs) => {
+const audioLevels = (media_stream, audioBarsRefs) => {
     let audioContext = new AudioContext(); // NEW!!
     let analyser = audioContext.createAnalyser();
     let microphone = audioContext.createMediaStreamSource(media_stream);
@@ -77,14 +80,19 @@ const audioLevels = (media_stream, setAudioLevel, audioBarsRefs) => {
 
         var average = values / length;
 
-        setAudioLevel(average);
-
         audioBarsRefs.forEach((bar, index) => {
             if (bar && bar.current)
                 bar.current.style.height = `${
                     8 + average / (index === 1 ? 2 : 5)
                 }px`;
         });
+    };
+
+    return () => {
+        javascriptNode.removeEventListener(
+            javascriptNode,
+            javascriptNode.onaudioprocess
+        );
     };
 };
 

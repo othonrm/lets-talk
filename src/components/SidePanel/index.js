@@ -55,13 +55,21 @@ const UserContainer = styled.div`
     display: flex;
     justify-content: flex-start;
     align-items: center;
+
+    text-transform: capitalize;
 `;
 
 const Avatar = styled.div`
     background: #e6e690;
     padding: 6px;
     border-radius: 6px;
-    margin-right: 6px;
+    margin-right: 10px;
+    width: 32px;
+    height: 32px;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 `;
 
 const MessageContainer = styled.div`
@@ -128,6 +136,9 @@ function SidePanel() {
 
                 window.socket.on("received-message", (msg) => {
                     setMessages([...messages, msg]);
+
+                    typeof window.onReceivedMessage === "function" &&
+                        window.onReceivedMessage();
                 });
 
                 setSocket(window.socket);
@@ -143,12 +154,17 @@ function SidePanel() {
         window.socket &&
             window.socket.on("received-message", (msg) => {
                 setMessages([...messages, msg]);
+
+                typeof window.onReceivedMessage === "function" &&
+                    window.onReceivedMessage();
             });
 
         return () => {
             window.socket &&
                 window.socket.removeAllListeners("received-message");
         };
+
+        // eslint-disable-next-line
     }, [socket, messages]);
 
     const toggleSidePanel = () => {
@@ -160,6 +176,9 @@ function SidePanel() {
         window.sidePanelActive = !window.sidePanelActive;
 
         setActive(window.sidePanelActive);
+
+        typeof window.onToggleSidePanel === "function" &&
+            window.onToggleSidePanel();
     };
 
     window.toggleSidePanel = toggleSidePanel;

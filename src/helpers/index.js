@@ -1,7 +1,17 @@
 import { useState } from "react";
 
-export const addVideoStream = (video, stream, userId, userName) => {
+export const addVideoStream = async (video, stream, userId, userName) => {
     window.streams = [...(window.streams || []), stream];
+
+    let audiooutput = localStorage.getItem("audiooutput_device");
+
+    if (
+        audiooutput !== undefined &&
+        audiooutput !== null &&
+        audiooutput !== ""
+    ) {
+        await video.setSinkId(audiooutput);
+    }
 
     if (document.getElementById(userId)) return;
 
@@ -17,7 +27,7 @@ export const addVideoStream = (video, stream, userId, userName) => {
     id_text.innerHTML = userId;
     id_text.className = "user_id";
 
-    user_text.innerHTML = userName;
+    user_text.innerHTML = userName.toString().toLocaleLowerCase("pt-BR");
     user_text.className = "user_name";
 
     video_container.className = "video_container";
