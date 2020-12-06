@@ -8,6 +8,7 @@ import PreviewPage from "../PreviewPage";
 import logo from "../../assets/images/letstalk-logo.png";
 import { Flex } from "../../helpers/styles";
 import { useParams } from "react-router-dom";
+import SidePanel from "../../components/SidePanel";
 
 const Logo = styled.img.attrs(() => ({
     src: logo,
@@ -46,6 +47,7 @@ const VideoGrid = styled(Flex).attrs(() => ({
         rgba(55, 38, 176, 0.7) 0%,
         rgba(193, 105, 213, 0.7) 100%
     );
+    transition: width 0.2s ease-in-out;
 
     display: grid;
     grid-gap: 16px;
@@ -65,6 +67,11 @@ const VideoGrid = styled(Flex).attrs(() => ({
         & > .video_container {
             max-width: 100%;
             max-height: 100%;
+        }
+
+        @media screen and (max-width: 760px) {
+            padding-right: 30px;
+            padding-bottom: 210px;
         }
     }
 
@@ -127,25 +134,56 @@ const MinimizedVideoList = styled.div.attrs(() => ({
     width: 0px;
     display: flex;
     flex-direction: column;
+    justify-content: center;
 
     &.show {
         width: 300px;
         padding: 1rem;
+
+        @media screen and (max-width: 760px) {
+            top: initial;
+            height: 200px;
+            left: 0px;
+            right: 0px;
+            flex-wrap: nowrap;
+            width: 100%;
+            right: initial;
+            flex-direction: row;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
     }
 
     .video_container {
         max-width: 100%;
         max-height: 200px;
+        height: auto;
+        margin: 0;
+
+        :not(:last-of-type) {
+            margin-bottom: 10px;
+        }
+
+        @media screen and (max-width: 760px) {
+            width: 280px;
+            min-width: 280px;
+
+            :not(:last-child) {
+                margin-bottom: 0px;
+                margin-right: 10px;
+            }
+        }
+    }
+
+    @media screen and (max-width: 760px) {
+        justify-content: flex-start;
     }
 `;
 
 function RoomPage() {
     const { room_id } = useParams();
 
-    const [ready, setReady] = useState(
-        localStorage.getItem("skip_" + room_id) === "true" &&
-            (localStorage.getItem("user_name") || "").length > 0
-    );
+    const [ready, setReady] = useState(false);
 
     const handleLeaveRoom = () => {
         setReady(false);
@@ -160,9 +198,18 @@ function RoomPage() {
                     <Logo />
 
                     <Container>
-                        <VideoGrid>
-                            <MinimizedVideoList />
-                        </VideoGrid>
+                        <Flex
+                            position="relative"
+                            height="calc(100% - 80px)"
+                            flex="1"
+                            width="100%"
+                        >
+                            <VideoGrid>
+                                <MinimizedVideoList />
+                            </VideoGrid>
+
+                            <SidePanel />
+                        </Flex>
 
                         <Connection handleLeaveRoom={handleLeaveRoom} />
                     </Container>

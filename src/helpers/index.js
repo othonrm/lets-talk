@@ -1,6 +1,8 @@
 import { useState } from "react";
 
 export const addVideoStream = (video, stream, userId, userName) => {
+    window.streams = [...(window.streams || []), stream];
+
     if (document.getElementById(userId)) return;
 
     video.srcObject = stream;
@@ -27,7 +29,14 @@ export const addVideoStream = (video, stream, userId, userName) => {
 
     video_container.ondblclick = (e) => setFocus(e.target.id);
 
-    document.getElementById("video_grid").append(video_container);
+    let minimized_list = document.getElementById("minimized_list");
+    let video_grid = document.getElementById("video_grid");
+
+    if (minimized_list.classList.contains("show")) {
+        minimized_list.append(video_container);
+    } else {
+        video_grid.append(video_container);
+    }
 
     return video_container;
 };

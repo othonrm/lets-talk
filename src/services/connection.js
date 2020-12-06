@@ -15,6 +15,7 @@ import {
     FaSignOutAlt,
     FaLock,
     FaUnlock,
+    FaUsers,
 } from "react-icons/fa";
 import { Flex } from "../helpers/styles";
 
@@ -33,6 +34,8 @@ const connectSocketNPeer = (callback) => {
     socket = io(
         process.env.NODE_ENV === "development" ? "localhost:8080" : "/"
     );
+
+    window.socket = socket;
 
     peer = new Peer(undefined, {
         path: "/peerjs",
@@ -56,7 +59,12 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
 
     window.forceUpdate = forceUpdate;
 
-    const currentUserName = localStorage.getItem("user_name");
+    const currentUserName =
+        localStorage.getItem("user_name") !== null &&
+        localStorage.getItem("user_name") !== undefined &&
+        localStorage.getItem("user_name") !== ""
+            ? localStorage.getItem("user_name")
+            : "Guest";
     const myVideoElement = document.createElement("video");
 
     const [startedMedia, setStartedMedia] = useState(undefined);
@@ -219,6 +227,10 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
             setConnected(socket.connected);
         });
 
+        socket.on("disconnect", function (reason) {
+            // leaveRoom();
+        });
+
         socket.on("user-connected", (userId, userName) => {
             const checkMyStream = () => {
                 if (!currentUserStream) {
@@ -284,7 +296,9 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
                 room_id,
                 peer_id,
                 currentUserName,
-                localStorage.getItem("locked_room_pass")
+                localStorage.getItem("locked_room_pass"),
+                currentUserStream.getVideoTracks()[0].enabled,
+                currentUserStream.getAudioTracks()[0].enabled
             );
         });
 
@@ -313,7 +327,7 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
         socket && socket.disconnect();
         socket && socket.close();
 
-        history.push(`/${room_id}/out`);
+        window.location.replace(`/${room_id}/out`);
     };
 
     window.leaveRoom = leaveRoom;
@@ -410,6 +424,8 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
 
         window.audioMuted = !currentUserStream.getAudioTracks()[0].enabled;
         setAudioMuted(window.audioMuted);
+
+        socket.emit('toggle-track', 'audio', currentUserStream.getAudioTracks()[0].enabled)
     };
 
     window.toggleMute = toggleMute;
@@ -425,18 +441,14 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
 
         window.videoDisabled = !currentUserStream.getVideoTracks()[0].enabled;
         setVideoDisabled(window.videoDisabled);
+
+        socket.emit('toggle-track', 'video', currentUserStream.getVideoTracks()[0].enabled)
     };
 
     window.toggleVideo = toggleVideo;
 
     return (
         <>
-            {roomOwner && (
-                <LockContainer onClick={lockRoom}>
-                    {roomLocked ? <FaLock /> : <FaUnlock />}
-                </LockContainer>
-            )}
-
             {knockRequests &&
                 roomOwner &&
                 knockRequests.map((request, index) => (
@@ -477,11 +489,28 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
                     <RoundedButton muted={screenSharing} onClick={screenShare}>
                         <FaDesktop />
                     </RoundedButton>
-                </Flex>
 
-                <LeaveButton onClick={handleLeaveRoom}>
-                    <span>Sair</span> <FaSignOutAlt />
-                </LeaveButton>
+                    {roomOwner && (
+                        <RoundedButton onClick={lockRoom}>
+                            {roomLocked ? <FaLock /> : <FaUnlock />}
+                        </RoundedButton>
+                    )}
+
+                    <RoundedButton onClick={window.toggleSidePanel}>
+                        <FaUsers />
+                    </RoundedButton>
+
+                    <Flex mobile>
+                        <RoundedButton muted onClick={handleLeaveRoom}>
+                            <FaSignOutAlt />
+                        </RoundedButton>
+                    </Flex>
+                </Flex>
+                <Flex desktop>
+                    <LeaveButton onClick={handleLeaveRoom}>
+                        <span>Sair</span> <FaSignOutAlt />
+                    </LeaveButton>
+                </Flex>
             </VideoControls>
         </>
     );
@@ -546,10 +575,12 @@ export default Connection;
 const VideoControls = styled.div`
     width: 100%;
     height: 80px;
+    max-height: 80px;
     box-sizing: border-box;
     background-color: #fff;
     box-shadow: 0px -3px 6px rgba(0, 0, 0, 0.36);
     z-index: 1;
+    flex: 1;
 
     display: flex;
     justify-content: center;
@@ -578,27 +609,9 @@ const LeaveButton = styled.button`
     }
 `;
 
-const LockContainer = styled.button`
-    position: absolute;
-    top: 80px;
-    right: 0;
-    background: #fff;
-    width: 48px;
-    height: 48px;
-    margin: 10px;
-    font-size: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 10px;
-    box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
-    border: none;
-    cursor: pointer;
-`;
-
 const KockModal = styled.div`
     position: absolute;
-    top: ${(props) => `${140 + props.index * 120}`}px;
+    top: ${(props) => `${80 + props.index * 120}`}px;
     right: 0;
     background: #fff;
     margin: 10px;
@@ -610,4 +623,5 @@ const KockModal = styled.div`
     border-radius: 10px;
     box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
     padding: 14px 10px;
+    z-index: 5;
 `;

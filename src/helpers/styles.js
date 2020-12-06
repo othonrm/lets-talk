@@ -61,6 +61,7 @@ export const Flex = styled.div`
     justify-content: ${({ justifyContent }) =>
         justifyContent ? justifyContent : "center"};
     ${({ background }) => background && `background: ${background}`};
+    ${({ color }) => color && `color: ${color}`};
     ${({ border }) => border && `border: ${border}`};
     ${({ boxShadow }) => boxShadow && `box-shadow: ${boxShadow}`};
     ${({ margin }) => margin && `margin: ${margin}`};

@@ -34,6 +34,21 @@ const Container = styled.button`
             color: rgb(55, 38, 176);
         `}
 
+    ${(props) =>
+        props.link &&
+        css`
+            background: transparent;
+            color: rgb(55, 38, 176);
+            box-shadow: none;
+        `}
+
+    ${(props) =>
+        props.disabled &&
+        css`
+            pointer-events: none;
+            opacity: 0.7;
+        `}
+
     & > *:not(:last-child) {
         margin-right: 8px;
     }

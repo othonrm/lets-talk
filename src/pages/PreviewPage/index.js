@@ -117,6 +117,10 @@ function PreviewPage({ ready, setReady, ...props }) {
     const { room_id } = useParams();
     const { getUserMedia } = navigator.mediaDevices;
 
+    const skipPreview =
+        localStorage.getItem("skip_" + room_id) === "true" &&
+        (localStorage.getItem("user_name") || "").length > 0;
+
     const [currentUserStream, setCurrentUserStream] = useState(undefined);
     const [audioMuted, setAudioMuted] = useState(false);
     const [videoDisabled, setVideoDisabled] = useState(false);
@@ -129,24 +133,30 @@ function PreviewPage({ ready, setReady, ...props }) {
         let userMediaStream;
         const video = document.getElementById("user_video");
 
-        getUserMedia({
-            video: true,
-            audio: true,
-        })
-            .then((media_stream) => {
-                userMediaStream = media_stream;
-                setCurrentUserStream(media_stream);
-                setAudioMuted(false);
-                setVideoDisabled(false);
-
-                video.muted = true;
-                video.srcObject = media_stream;
-                video.addEventListener("loadedmetadata", () => {
-                    video.play();
-                });
-                video.style.transform = "scaleX(-1)";
+        if (skipPreview) {
+            knockRoom();
+        } else {
+            getUserMedia({
+                video: true,
+                audio: true,
             })
-            .catch((reason) => alert("Cannot get video because: " + reason));
+                .then((media_stream) => {
+                    userMediaStream = media_stream;
+                    setCurrentUserStream(media_stream);
+                    setAudioMuted(false);
+                    setVideoDisabled(false);
+
+                    video.muted = true;
+                    video.srcObject = media_stream;
+                    video.addEventListener("loadedmetadata", () => {
+                        video.play();
+                    });
+                    video.style.transform = "scaleX(-1)";
+                })
+                .catch((reason) =>
+                    alert("Cannot get video because: " + reason)
+                );
+        }
 
         return () => {
             socket && socket.destroy();
@@ -165,6 +175,7 @@ function PreviewPage({ ready, setReady, ...props }) {
             /(?:(?![0-9a-zA-zàáâäãåąčćęèéêëėįìíîïłńòóôöõøùúûüųūÿýżźñçčšžÀÁÂÄÃÅĄĆČĖĘÈÉÊËÌÍÎÏĮŁŃÒÓÔÖÕØÙÚÛÜŲŪŸÝŻŹÑßÇŒÆČŠŽ∂ð |,.'-]).)+/g,
             ""
         );
+        if (tempName === " ") tempName = "";
         setName(tempName);
         localStorage.setItem("user_name", tempName.trim());
     };
@@ -192,16 +203,18 @@ function PreviewPage({ ready, setReady, ...props }) {
     const knockRoom = () => {
         setKnocking(true);
 
-        socket.emit("knock-room", room_id, name);
+        socket.emit("knock-room", room_id, name === "" ? "Guest" : name);
     };
 
     window.knockRoom = knockRoom;
 
     const handleRequestToEnter = () => {
+        console.log(name !== "");
         if (
-            !name ||
-            name.toString().trim().length === 0 ||
-            !checkNameValidity()
+            (!name ||
+                name.toString().trim().length === 0 ||
+                !checkNameValidity()) &&
+            name !== ""
         )
             return;
 
@@ -215,6 +228,10 @@ function PreviewPage({ ready, setReady, ...props }) {
     window.handleEnterRoom = handleEnterRoom;
 
     const handleGiveUpKnocking = () => {
+        if (skipPreview) {
+            localStorage.removeItem("skip_" + room_id);
+        }
+
         window.location.reload();
     };
 
@@ -222,45 +239,50 @@ function PreviewPage({ ready, setReady, ...props }) {
         <Container direction="column">
             <HeaderLogo />
 
-            <VideoContainer>
-                {!currentUserStream && (
-                    <NoVideo>
-                        <h3>Estamos iniciando seu vídeo</h3>
-                    </NoVideo>
-                )}
-                {videoDisabled && (
-                    <NoVideo>
-                        <h3>Seu vídeo está desligado</h3>
-                    </NoVideo>
-                )}
+            {!skipPreview && (
+                <VideoContainer>
+                    {!currentUserStream && (
+                        <NoVideo>
+                            <h3>Estamos iniciando seu vídeo</h3>
+                        </NoVideo>
+                    )}
+                    {videoDisabled && (
+                        <NoVideo>
+                            <h3>Seu vídeo está desligado</h3>
+                        </NoVideo>
+                    )}
 
-                <video id="user_video" />
+                    <video id="user_video" />
 
-                {currentUserStream && (
-                    <AudioLevels
-                        muted={audioMuted}
-                        mediaStream={currentUserStream}
-                    />
-                )}
+                    {currentUserStream && (
+                        <AudioLevels
+                            muted={audioMuted}
+                            mediaStream={currentUserStream}
+                        />
+                    )}
 
-                {currentUserStream && (
-                    <ControlsContainer>
-                        <RoundedButton muted={audioMuted} onClick={toggleMute}>
-                            {audioMuted ? (
-                                <FaMicrophoneAltSlash />
-                            ) : (
-                                <FaMicrophoneAlt />
-                            )}
-                        </RoundedButton>
-                        <RoundedButton
-                            muted={videoDisabled}
-                            onClick={toggleVideo}
-                        >
-                            {videoDisabled ? <FaVideoSlash /> : <FaVideo />}
-                        </RoundedButton>
-                    </ControlsContainer>
-                )}
-            </VideoContainer>
+                    {currentUserStream && (
+                        <ControlsContainer>
+                            <RoundedButton
+                                muted={audioMuted}
+                                onClick={toggleMute}
+                            >
+                                {audioMuted ? (
+                                    <FaMicrophoneAltSlash />
+                                ) : (
+                                    <FaMicrophoneAlt />
+                                )}
+                            </RoundedButton>
+                            <RoundedButton
+                                muted={videoDisabled}
+                                onClick={toggleVideo}
+                            >
+                                {videoDisabled ? <FaVideoSlash /> : <FaVideo />}
+                            </RoundedButton>
+                        </ControlsContainer>
+                    )}
+                </VideoContainer>
+            )}
 
             {!knocking ? (
                 <>
@@ -303,7 +325,7 @@ function PreviewPage({ ready, setReady, ...props }) {
 
                         <Flex margin="0 0 16px 0">
                             <Button
-                                disabled={!checkNameValidity()}
+                                disabled={!checkNameValidity() && name !== ""}
                                 onClick={handleRequestToEnter}
                             >
                                 Entrar no papo

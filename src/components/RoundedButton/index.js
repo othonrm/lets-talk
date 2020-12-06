@@ -20,7 +20,7 @@ const Container = styled.button`
     }
 
     :not(:last-child) {
-        margin-right: 1rem;
+        margin-right: 10px;
     }
 
     ${(props) =>
