@@ -1,5 +1,21 @@
 import { useState } from "react";
 
+window.refreshAudioOutputDevice = () => {
+    let audiooutput = localStorage.getItem("audiooutput_device");
+
+    document
+        .querySelectorAll(".video_container video")
+        .forEach(async (video) => {
+            if (
+                audiooutput !== undefined &&
+                audiooutput !== null &&
+                audiooutput !== ""
+            ) {
+                await video.setSinkId(audiooutput);
+            }
+        });
+};
+
 export const addVideoStream = async (video, stream, userId, userName) => {
     window.streams = [...(window.streams || []), stream];
 
