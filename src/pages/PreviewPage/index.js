@@ -10,16 +10,13 @@ import {
     FaMicrophoneAltSlash,
     FaVideo,
     FaVideoSlash,
-    FaVolumeUp,
     FaCog,
 } from "react-icons/fa";
 
 import RoundedButton from "../../components/RoundedButton";
 import Button from "../../components/Button";
 import AudioLevels from "../../components/AudioLevels";
-import Select from "../../components/Select";
 
-import enter_room from "../../assets/audios/enter_room.mp3";
 import logo from "../../assets/images/letstalk-logo.png";
 
 const Container = styled(Flex)`
@@ -133,14 +130,6 @@ function PreviewPage({ ready, setReady, ...props }) {
     );
     const [name, setName] = useState(localStorage.user_name || "");
     const [knocking, setKnocking] = useState(false);
-    const [values, setValues] = useState({
-        audioinput: localStorage.getItem("audioinput_device") || undefined,
-        audiooutput: localStorage.getItem("audiooutput_device") || undefined,
-        videoinput: localStorage.getItem("videoinput_device") || undefined,
-    });
-    const [showDeviceConfig, setShowDeviceConfig] = useState(false);
-
-    const [mediaDevices, setMediaDevices] = useState([]);
 
     useEffect(() => {
         connectSocket(handleEnterRoom);
@@ -149,15 +138,6 @@ function PreviewPage({ ready, setReady, ...props }) {
             knockRoom();
         } else {
             handleGetUserStream();
-
-            navigator.mediaDevices
-                .enumerateDevices()
-                .then((device) => {
-                    setMediaDevices(device);
-                })
-                .catch((reason) =>
-                    alert("Cannot get video because: " + reason)
-                );
         }
 
         return () => {
@@ -172,11 +152,9 @@ function PreviewPage({ ready, setReady, ...props }) {
         // eslint-disable-next-line
     }, []);
 
-    useEffect(() => {
+    window.onChangeMediaDevices = () => {
         stopMediaTracks();
-
-        // eslint-disable-next-line
-    }, [values]);
+    };
 
     const handleGetUserStream = () => {
         const video = document.getElementById("user_video");
@@ -186,9 +164,14 @@ function PreviewPage({ ready, setReady, ...props }) {
         video.style.transform = "scaleX(-1)";
         video.muted = true;
 
+        let audioinput = localStorage.getItem("audioinput_device") || undefined;
+        let audiooutput =
+            localStorage.getItem("audiooutput_device") || undefined;
+        let videoinput = localStorage.getItem("videoinput_device") || undefined;
+
         let constraints = {
-            video: values.videoinput ? { deviceId: values.videoinput } : true,
-            audio: values.audioinput ? { deviceId: values.audioinput } : true,
+            video: videoinput ? { deviceId: videoinput } : true,
+            audio: audioinput ? { deviceId: audioinput } : true,
         };
 
         getUserMedia(constraints)
@@ -207,8 +190,7 @@ function PreviewPage({ ready, setReady, ...props }) {
 
                 setCurrentUserStream(media_stream);
 
-                if (values.audiooutput)
-                    await video.setSinkId(values.audiooutput);
+                if (audiooutput) await video.setSinkId(audiooutput);
 
                 video.srcObject = media_stream;
                 video.addEventListener("loadedmetadata", () => {
@@ -226,21 +208,6 @@ function PreviewPage({ ready, setReady, ...props }) {
         if (tempName === " ") tempName = "";
         setName(tempName);
         localStorage.setItem("user_name", tempName.trim());
-    };
-
-    const handleChange = (e) => {
-        setValues({
-            ...values,
-            [e.target.name]: e.target.value,
-        });
-
-        if (e.target.name === "audioinput") {
-            localStorage.setItem("audioinput_device", e.target.value);
-        } else if (e.target.name === "audiooutput") {
-            localStorage.setItem("audiooutput_device", e.target.value);
-        } else if (e.target.name === "videoinput") {
-            localStorage.setItem("videoinput_device", e.target.value);
-        }
     };
 
     const toggleMute = () => {
@@ -288,16 +255,6 @@ function PreviewPage({ ready, setReady, ...props }) {
             });
 
         handleGetUserStream(null, document.getElementById("user_video"));
-    };
-
-    const handleTestCurrentOutputDevice = async () => {
-        console.log(values.audiooutput);
-
-        const audioEnterRoom = new Audio(enter_room);
-        if (values.audiooutput)
-            await audioEnterRoom.setSinkId(values.audiooutput);
-
-        audioEnterRoom.play();
     };
 
     const handleRequestToEnter = () => {
@@ -372,9 +329,7 @@ function PreviewPage({ ready, setReady, ...props }) {
                                 {videoDisabled ? <FaVideoSlash /> : <FaVideo />}
                             </RoundedButton>
                             <RoundedButton
-                                onClick={() =>
-                                    setShowDeviceConfig(!showDeviceConfig)
-                                }
+                                onClick={() => window.showConfigModal()}
                             >
                                 <FaCog />
                             </RoundedButton>
@@ -383,142 +338,77 @@ function PreviewPage({ ready, setReady, ...props }) {
                 </VideoContainer>
             )}
 
-            {mediaDevices && showDeviceConfig && (
+            {!knocking ? (
                 <>
-                    <Select
-                        width="300px"
-                        prepend={<FaMicrophoneAlt />}
-                        name="audioinput"
-                        value={values.audioinput}
-                        onChange={handleChange}
-                    >
-                        {mediaDevices
-                            .filter((item) => item.kind === "audioinput")
-                            .map((device) => (
-                                <option value={device.deviceId}>
-                                    {device.label}
-                                </option>
-                            ))}
-                    </Select>
+                    <Flex direction="column" margin="30px 0 0 0">
+                        <Flex margin="0 0 16px 0">
+                            <h1>Tudo pronto para conectar?</h1>
+                        </Flex>
+                        <p>Sala: {room_id}</p>
 
-                    <Select
-                        width="300px"
-                        prepend={<FaVolumeUp />}
-                        append={
-                            <Button
-                                small
-                                link
-                                value="Testar"
-                                padding="0"
-                                margin="0"
-                                onClick={handleTestCurrentOutputDevice}
+                        <Flex direction="column" margin="32px 0 10px 0">
+                            <TextInput
+                                name="user_name"
+                                value={name}
+                                onChange={(e) => handleChangeName(e)}
+                                placeholder="Digite seu nome"
+                                pattern="[a-zA-Z]"
                             />
-                        }
-                        name="audiooutput"
-                        value={values.audiooutput}
-                        onChange={handleChange}
-                    >
-                        {mediaDevices
-                            .filter((item) => item.kind === "audiooutput")
-                            .map((device) => (
-                                <option value={device.deviceId}>
-                                    {device.label}
-                                </option>
-                            ))}
-                    </Select>
+                        </Flex>
 
-                    <Select
-                        width="300px"
-                        prepend={<FaVideo />}
-                        name="videoinput"
-                        value={values.videoinput}
-                        onChange={handleChange}
-                    >
-                        {mediaDevices
-                            .filter((item) => item.kind === "videoinput")
-                            .map((device) => (
-                                <option value={device.deviceId}>
-                                    {device.label}
-                                </option>
-                            ))}
-                    </Select>
+                        <Flex direction="column" margin="10px 0 32px 0">
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    name="skip"
+                                    defaultChecked={
+                                        localStorage.getItem(
+                                            "skip_" + room_id
+                                        ) === "true"
+                                    }
+                                    onChange={(e) =>
+                                        localStorage.setItem(
+                                            "skip_" + room_id,
+                                            e.target.checked
+                                        )
+                                    }
+                                />
+                                Pular próxima entrada nesta sala
+                            </label>
+                        </Flex>
+
+                        <Flex margin="0 0 16px 0">
+                            <Button
+                                disabled={!checkNameValidity() && name !== ""}
+                                onClick={handleRequestToEnter}
+                            >
+                                Entrar no papo
+                            </Button>
+                        </Flex>
+                    </Flex>
+                </>
+            ) : (
+                <>
+                    <Flex direction="column" margin="30px 0 0 0">
+                        <Flex margin="0 0 16px 0">
+                            <h1>
+                                Estamos avisando o pessoal que você quer entrar
+                                no papo
+                            </h1>
+                        </Flex>
+                        <p>
+                            Aguarde alguém aprovar sua entrada, não é legal
+                            atravessar a conversa de ninguém...
+                        </p>
+
+                        <Flex margin="0 0 16px 0">
+                            <Button onClick={handleGiveUpKnocking}>
+                                Desistir
+                            </Button>
+                        </Flex>
+                    </Flex>
                 </>
             )}
-
-            {!showDeviceConfig &&
-                (!knocking ? (
-                    <>
-                        <Flex direction="column" margin="30px 0 0 0">
-                            <Flex margin="0 0 16px 0">
-                                <h1>Tudo pronto para conectar?</h1>
-                            </Flex>
-                            <p>Sala: {room_id}</p>
-
-                            <Flex direction="column" margin="32px 0 10px 0">
-                                <TextInput
-                                    name="user_name"
-                                    value={name}
-                                    onChange={(e) => handleChangeName(e)}
-                                    placeholder="Digite seu nome"
-                                    pattern="[a-zA-Z]"
-                                />
-                            </Flex>
-
-                            <Flex direction="column" margin="10px 0 32px 0">
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        name="skip"
-                                        defaultChecked={
-                                            localStorage.getItem(
-                                                "skip_" + room_id
-                                            ) === "true"
-                                        }
-                                        onChange={(e) =>
-                                            localStorage.setItem(
-                                                "skip_" + room_id,
-                                                e.target.checked
-                                            )
-                                        }
-                                    />
-                                    Pular próxima entrada nesta sala
-                                </label>
-                            </Flex>
-
-                            <Flex margin="0 0 16px 0">
-                                <Button
-                                    disabled={
-                                        !checkNameValidity() && name !== ""
-                                    }
-                                    onClick={handleRequestToEnter}
-                                >
-                                    Entrar no papo
-                                </Button>
-                            </Flex>
-                        </Flex>
-                    </>
-                ) : (
-                    <>
-                        <Flex direction="column" margin="30px 0 0 0">
-                            <Flex margin="0 0 16px 0">
-                                <h1>
-                                    Estamos avisando o pessoal que você quer
-                                    entrar no papo
-                                </h1>
-                            </Flex>
-                            <p>
-                                Aguarde alguém aprovar sua entrada, não é legal
-                                atravessar a conversa de ninguém...
-                            </p>
-
-                            <Flex margin="0 0 16px 0">
-                                <Button onClick={handleGiveUpKnocking}>
-                                    Desistir
-                                </Button>
-                            </Flex>
-                        </Flex>
-                    </>
-                ))}
         </Container>
     );
 }

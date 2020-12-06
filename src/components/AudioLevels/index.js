@@ -1,5 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import styled, { css } from "styled-components";
+
+import { computeAudioLevel } from "../../helpers";
 
 const Container = styled.div`
     background-color: transparent;
@@ -17,6 +19,8 @@ const Container = styled.div`
 const AudioBar = styled.div`
     background-color: #3ccd39;
     width: 8px;
+    height: 8px;
+    max-height: 100%;
     border-radius: 10px;
 
     transition: height 0.025s linear;
@@ -33,11 +37,11 @@ const AudioBar = styled.div`
         `}
 `;
 
-function AudioLevels({ muted, mediaStream, props }) {
+function AudioLevels({ muted, mediaStream, className, ...props }) {
     const audioBarsRefs = [useRef(null), useRef(null), useRef(null)];
 
     useEffect(() => {
-        let _return = audioLevels(mediaStream, audioBarsRefs);
+        let _return = computeAudioLevel(mediaStream, audioBarsRefs);
 
         return () => {
             _return();
@@ -47,53 +51,24 @@ function AudioLevels({ muted, mediaStream, props }) {
     }, [mediaStream]);
 
     return (
-        <Container>
-            <AudioBar ref={audioBarsRefs[0]} muted={muted === true} />
-            <AudioBar ref={audioBarsRefs[1]} muted={muted === true} />
-            <AudioBar ref={audioBarsRefs[2]} muted={muted === true} />
+        <Container className={[className, "audio_level"].join(" ")} {...props}>
+            <AudioBar
+                className="audio_bar"
+                ref={audioBarsRefs[0]}
+                muted={muted === true}
+            />
+            <AudioBar
+                className="audio_bar"
+                ref={audioBarsRefs[1]}
+                muted={muted === true}
+            />
+            <AudioBar
+                className="audio_bar"
+                ref={audioBarsRefs[2]}
+                muted={muted === true}
+            />
         </Container>
     );
 }
-
-const audioLevels = (media_stream, audioBarsRefs) => {
-    let audioContext = new AudioContext(); // NEW!!
-    let analyser = audioContext.createAnalyser();
-    let microphone = audioContext.createMediaStreamSource(media_stream);
-    let javascriptNode = audioContext.createScriptProcessor(2048, 1, 1);
-
-    analyser.smoothingTimeConstant = 0.3;
-    analyser.fftSize = 1024;
-
-    microphone.connect(analyser);
-    analyser.connect(javascriptNode);
-    javascriptNode.connect(audioContext.destination);
-
-    javascriptNode.onaudioprocess = function () {
-        var array = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(array);
-        var values = 0;
-
-        var length = array.length;
-        for (var i = 0; i < length; i++) {
-            values += array[i];
-        }
-
-        var average = values / length;
-
-        audioBarsRefs.forEach((bar, index) => {
-            if (bar && bar.current)
-                bar.current.style.height = `${
-                    8 + average / (index === 1 ? 2 : 5)
-                }px`;
-        });
-    };
-
-    return () => {
-        javascriptNode.removeEventListener(
-            javascriptNode,
-            javascriptNode.onaudioprocess
-        );
-    };
-};
 
 export default AudioLevels;

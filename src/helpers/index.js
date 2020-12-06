@@ -124,3 +124,44 @@ export const setFocus = (focus_id) => {
 };
 
 window.setFocus = setFocus;
+
+export const computeAudioLevel = (media_stream, audioBarsRefs) => {
+    let audioContext = new AudioContext(); // NEW!!
+    let analyser = audioContext.createAnalyser();
+    let microphone = audioContext.createMediaStreamSource(media_stream);
+    let javascriptNode = audioContext.createScriptProcessor(2048, 1, 1);
+
+    analyser.smoothingTimeConstant = 0.3;
+    analyser.fftSize = 1024;
+
+    microphone.connect(analyser);
+    analyser.connect(javascriptNode);
+    javascriptNode.connect(audioContext.destination);
+
+    javascriptNode.onaudioprocess = function () {
+        var array = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(array);
+        var values = 0;
+
+        var length = array.length;
+        for (var i = 0; i < length; i++) {
+            values += array[i];
+        }
+
+        var average = values / length;
+
+        audioBarsRefs.forEach((bar, index) => {
+            if (bar && bar.current)
+                bar.current.style.height = `${
+                    8 + average / (index === 1 ? 2 : 5)
+                }px`;
+        });
+    };
+
+    return () => {
+        javascriptNode.removeEventListener(
+            javascriptNode,
+            javascriptNode.onaudioprocess
+        );
+    };
+};

@@ -1,14 +1,18 @@
 import React, { useState } from "react";
+import { useParams } from "react-router-dom";
 import styled from "styled-components";
 
+import { FaCog } from "react-icons/fa";
+
 import Connection from "../../services/connection";
-// import "../../services/old_connection";
 import PreviewPage from "../PreviewPage";
 
-import logo from "../../assets/images/letstalk-logo.png";
 import { Flex } from "../../helpers/styles";
-import { useParams } from "react-router-dom";
 import SidePanel from "../../components/SidePanel";
+import ConfigModal from "../../components/ConfigModal";
+import { default as Rounded } from "../../components/RoundedButton";
+
+import logo from "../../assets/images/letstalk-logo.png";
 
 const Logo = styled.img.attrs(() => ({
     src: logo,
@@ -107,6 +111,9 @@ const VideoGrid = styled(Flex).attrs(() => ({
         }
 
         .user_name {
+            display: flex;
+            align-items: center;
+            justify-content: center;
             position: absolute;
             bottom: 0px;
             margin: 10px;
@@ -180,6 +187,13 @@ const MinimizedVideoList = styled.div.attrs(() => ({
     }
 `;
 
+const RoundedButton = styled(Rounded)`
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    margin: 10px !important;
+`;
+
 function RoomPage() {
     const { room_id } = useParams();
 
@@ -193,6 +207,8 @@ function RoomPage() {
 
     return (
         <>
+            <ConfigModal />
+
             {ready === true ? (
                 <>
                     <Logo />
@@ -206,6 +222,11 @@ function RoomPage() {
                         >
                             <VideoGrid>
                                 <MinimizedVideoList />
+                                <RoundedButton
+                                    onClick={() => window.showConfigModal()}
+                                >
+                                    <FaCog />
+                                </RoundedButton>
                             </VideoGrid>
 
                             <SidePanel />

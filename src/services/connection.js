@@ -4,7 +4,12 @@ import Peer from "peerjs";
 import { matchPath, useHistory, useParams } from "react-router";
 import styled from "styled-components";
 
-import { addVideoStream, replaceSenderTrack, useForceUpdate } from "../helpers";
+import {
+    addVideoStream,
+    computeAudioLevel,
+    replaceSenderTrack,
+    useForceUpdate,
+} from "../helpers";
 
 import {
     FaMicrophoneAlt,
@@ -26,6 +31,8 @@ import enter_room from "../assets/audios/enter_room.mp3";
 import leave_room from "../assets/audios/leave_room.mp3";
 import knocking from "../assets/audios/knocking.mp3";
 import new_message from "../assets/audios/new_message.mp3";
+import AudioLevels from "../components/AudioLevels";
+import { renderToString } from "react-dom/server";
 
 let socket;
 let peer;
@@ -192,7 +199,21 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
                 ).innerHTML = myId;
                 myVideoRef.current.parentElement.querySelector(
                     ".user_name"
-                ).innerHTML = currentUserName || myId;
+                ).innerHTML =
+                    (currentUserName || "Guest") +
+                    renderToString(
+                        <CustomAudioLevels mediaStream={currentUserStream} />
+                    );
+
+                let audio_bars = myVideoRef.current.parentElement.querySelectorAll(
+                    ".user_name .audio_level .audio_bar"
+                );
+
+                computeAudioLevel(currentUserStream, [
+                    { current: audio_bars[0] },
+                    { current: audio_bars[1] },
+                    { current: audio_bars[2] },
+                ]);
 
                 myVideoRef.current.parentElement.style.border =
                     "2px solid #c16bd5";
@@ -258,6 +279,14 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
 
         // eslint-disable-next-line
     }, [knockRequests]);
+
+    window.onChangeMediaDevices = () => {
+        audioEnterRoom.setSinkId(audiooutput);
+        audioLeaveRoom.setSinkId(audiooutput);
+        audioKnocking.setSinkId(audiooutput);
+        audioNewMessage.setSinkId(audiooutput);
+        window.refreshAudioOutputDevice();
+    };
 
     const setEvents = () => {
         setSocketEvents();
@@ -675,4 +704,12 @@ const KockModal = styled.div`
     box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
     padding: 14px 10px;
     z-index: 5;
+`;
+
+const CustomAudioLevels = styled(AudioLevels)`
+    position: initial;
+    padding: 0px;
+    margin: 0px;
+    max-height: 20px;
+    margin-left: 12px;
 `;

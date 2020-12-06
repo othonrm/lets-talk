@@ -12,7 +12,7 @@ const Caret = styled(CaretDown)`
     margin: 0px !important;
 `;
 
-const Container = styled.button`
+const Container = styled.div`
     position: relative;
     display: flex;
     align-items: center;
