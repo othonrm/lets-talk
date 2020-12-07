@@ -102,7 +102,6 @@ const VideoGrid = styled(Flex).attrs(() => ({
             background-color: transparent;
             margin: 0px;
             box-sizing: border-box;
-            pointer-events: none;
         }
 
         .user_id {

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { renderToString } from "react-dom/server";
+import FullscreenButton from "../components/FullscreenButton";
 
 window.refreshAudioOutputDevice = () => {
     let audiooutput = localStorage.getItem("audiooutput_device");
@@ -49,11 +51,27 @@ export const addVideoStream = async (video, stream, userId, userName) => {
     video_container.className = "video_container";
 
     video_container.id = userId;
+
+    video_container.innerHTML = renderToString(<FullscreenButton />);
+    let fullscreen_button = video_container.querySelector(".fullscreen_button");
+
+    document.addEventListener("fullscreenchange", (e) => {
+        if (document.fullscreenElement) {
+            fullscreen_button.classList.add("hide");
+        } else {
+            fullscreen_button.classList.remove("hide");
+        }
+    });
+
+    fullscreen_button.onclick = () => {
+        fullscreen_button.parentNode.requestFullscreen();
+    };
+
     video_container.append(video);
     video_container.append(id_text);
     video_container.append(user_text);
 
-    video_container.ondblclick = (e) => setFocus(e.target.id);
+    video_container.ondblclick = (e) => setFocus(video_container.id);
 
     let minimized_list = document.getElementById("minimized_list");
     let video_grid = document.getElementById("video_grid");
