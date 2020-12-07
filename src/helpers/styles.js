@@ -69,7 +69,7 @@ export const GlobalStyle = createGlobalStyle`
 `;
 
 export const Flex = styled.div`
-    display: flex;
+    display: ${({ display }) => (display ? display : "flex")};
     flex-wrap: ${({ wrap }) => (wrap ? wrap : "wrap")};
     flex-grow: ${({ grow }) => (grow ? grow : "initial")};
     ${({ alignSelf }) => alignSelf && `align-self: ${alignSelf};`};

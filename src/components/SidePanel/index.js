@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styled, { css } from "styled-components";
 
 import { format } from "date-fns";
@@ -20,13 +20,14 @@ const Container = styled.div`
     height: 100%;
     box-sizing: border-box;
     background-color: ${darktheme.secondary};
-    overflow-x: hidden;
+
     transition: all 0.2s ease-in-out;
     margin-right: -350px;
     display: flex;
     flex-direction: column;
     z-index: 2;
     box-shadow: -3px -1px 6px rgba(0, 0, 0, 0.16);
+    overflow: hidden;
 
     ${(props) =>
         props.active &&
@@ -128,6 +129,8 @@ const MessageInput = styled.input`
 `;
 
 function SidePanel() {
+    const chatListRef = useRef(null);
+
     const [socket, setSocket] = useState(window.socket);
     const [roomMembers, setRoomMembers] = useState([]);
     const [messages, setMessages] = useState([]);
@@ -160,6 +163,17 @@ function SidePanel() {
 
         // eslint-disable-next-line
     }, []);
+
+    useEffect(() => {
+        if (
+            messages &&
+            messages.length > 0 &&
+            chatListRef &&
+            chatListRef.current
+        ) {
+            chatListRef.current.scrollTop = chatListRef.current.scrollHeight;
+        }
+    }, [messages]);
 
     useEffect(() => {
         window.socket &&
@@ -253,6 +267,7 @@ function SidePanel() {
                         flex="1"
                         padding="26px"
                         boxSizing="border-box"
+                        overflow="hidden"
                     >
                         <TabTitle>NA SALA ({roomMembers.length})</TabTitle>
 
@@ -314,6 +329,7 @@ function SidePanel() {
                         flex="1"
                         padding="0"
                         boxSizing="border-box"
+                        overflow="hidden"
                     >
                         <Flex
                             alignItems="flex-start"
@@ -327,6 +343,8 @@ function SidePanel() {
                             boxSizing="border-box"
                             padding="16px 8px 0 8px"
                             flex="1"
+                            display="block"
+                            ref={chatListRef}
                         >
                             {messages &&
                                 messages.map((message, index) => (
@@ -339,6 +357,7 @@ function SidePanel() {
                                                 : "flex-start"
                                         }
                                         key={index}
+                                        color={darktheme.fontdark}
                                     >
                                         {(!messages[index - 1] ||
                                             format(
@@ -364,6 +383,7 @@ function SidePanel() {
                                                 justifyContent="center"
                                                 as="small"
                                                 margin="0 0 0px 0"
+                                                color={darktheme.fontdark}
                                             >
                                                 {format(
                                                     new Date(message.date),
