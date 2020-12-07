@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React from "react";
 
 import { FaExpand } from "react-icons/fa";
 import styled from "styled-components";

@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useParams } from "react-router-dom";
 import styled from "styled-components";
 
 import { FaCog } from "react-icons/fa";
@@ -195,8 +194,6 @@ const RoundedButton = styled(Rounded)`
 `;
 
 function RoomPage() {
-    const { room_id } = useParams();
-
     const [ready, setReady] = useState(false);
 
     const handleLeaveRoom = () => {
