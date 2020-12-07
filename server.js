@@ -11,7 +11,7 @@ const io = require("socket.io")(server, {
         origin:
             process.env.NODE_ENV !== "production"
                 ? "*"
-                : "https://othon-lets-talk.herokuapp.com",
+                : "https://www.lets-talk.dev.br",
     },
 });
 const { ExpressPeerServer } = require("peer");
@@ -31,7 +31,7 @@ app.use((req, res, next) => {
                   "http://127.0.0.1:8080",
                   "http://localhost:3000",
               ]
-            : ["https://othon-lets-talk.herokuapp.com"];
+            : ["https://www.lets-talk.dev.br"];
     const origin = req.headers.origin;
 
     if (allowedOrigins.includes(origin)) {
