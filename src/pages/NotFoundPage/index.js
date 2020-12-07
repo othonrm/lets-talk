@@ -1,10 +1,16 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-import { Flex } from "../../helpers/styles";
+import { darktheme, Flex } from "../../helpers/styles";
 
 import Logo from "../../components/Logo";
 import Button from "../../components/Button";
+import styled from "styled-components";
+import { lighten } from "polished";
+
+const Title = styled.h2`
+    color: ${lighten(-0.1, darktheme.fontdark)};
+`;
 
 function NotFoundPage() {
     return (
@@ -12,7 +18,9 @@ function NotFoundPage() {
             <Logo />
 
             <Flex margin="32px 0">
-                <h2>Ops, não encontramos o que você está procurando...</h2>
+                <Title>
+                    Ops, não encontramos o que você está procurando...
+                </Title>
             </Flex>
 
             <Button as={Link} to="/">

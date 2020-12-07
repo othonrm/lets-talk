@@ -22,7 +22,7 @@ import {
     FaUnlock,
     FaUsers,
 } from "react-icons/fa";
-import { Flex } from "../helpers/styles";
+import { darkmodeEnabled, darktheme, Flex } from "../helpers/styles";
 
 import Button from "../components/Button";
 import RoundedButton from "../components/RoundedButton";
@@ -536,6 +536,7 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
                                 onClick={() => letEnter(request[0])}
                                 outlined
                                 margin="16px 10px 0 0"
+                                color={darkmodeEnabled && darktheme.fontdark}
                             >
                                 Permitir
                             </Button>
@@ -657,7 +658,7 @@ const VideoControls = styled.div`
     height: 80px;
     max-height: 80px;
     box-sizing: border-box;
-    background-color: #fff;
+    background-color: ${darktheme.primary};
     box-shadow: 0px -3px 6px rgba(0, 0, 0, 0.36);
     z-index: 1;
     flex: 1;
@@ -693,7 +694,8 @@ const KockModal = styled.div`
     position: absolute;
     top: ${(props) => `${80 + props.index * 120}`}px;
     right: 0;
-    background: #fff;
+    background-color: ${darktheme.primary};
+    color: ${darktheme.fontdark};
     margin: 10px;
     font-size: 20px;
     display: flex;

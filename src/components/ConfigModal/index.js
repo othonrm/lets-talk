@@ -7,7 +7,7 @@ import Select from "../Select";
 
 import enter_room from "../../assets/audios/enter_room.mp3";
 import Button from "../Button";
-import { Flex } from "../../helpers/styles";
+import { darkmodeEnabled, darktheme, Flex } from "../../helpers/styles";
 
 const Backdrop = styled.div`
     position: fixed;
@@ -20,7 +20,7 @@ const Backdrop = styled.div`
 `;
 
 const Container = styled(Flex)`
-    background-color: #fff;
+    background-color: ${darktheme.primary};
     width: 400px;
     max-width: 80vw;
     height: auto;
@@ -31,6 +31,10 @@ const Container = styled(Flex)`
     padding: 1rem;
     border-radius: 10px;
     z-index: 10;
+`;
+
+const Title = styled.h4`
+    color: ${darktheme.fontdark};
 `;
 
 function ConfigModal() {
@@ -122,7 +126,7 @@ function ConfigModal() {
                     <Container>
                         <Flex width="100%" margin="0 0 20px 0">
                             <Flex margin="0 0 0 auto">
-                                <h4>Configurações</h4>
+                                <Title>Configurações</Title>
                             </Flex>
                             <Button
                                 margin="0 0 0 auto"
@@ -132,6 +136,7 @@ function ConfigModal() {
                                 onClick={handleClose}
                             />
                         </Flex>
+
                         <Select
                             width="300px"
                             prepend={<FaMicrophoneAlt />}
@@ -162,6 +167,9 @@ function ConfigModal() {
                                     padding="0"
                                     margin="0"
                                     onClick={handleTestCurrentOutputDevice}
+                                    color={
+                                        darkmodeEnabled && darktheme.fontdark
+                                    }
                                 />
                             }
                             name="audiooutput"

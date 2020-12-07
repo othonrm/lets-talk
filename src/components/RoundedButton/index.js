@@ -1,9 +1,12 @@
+import { lighten } from "polished";
 import React from "react";
 import styled, { css } from "styled-components";
+import { darktheme } from "../../helpers/styles";
 
 const Container = styled.button`
     position: relative;
-    background-color: #fff;
+    background-color: ${lighten(0.1, darktheme.primary)};
+    color: ${lighten(0.1, darktheme.fontdark)};
     width: 48px;
     height: 48px;
     font-size: 18px;

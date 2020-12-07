@@ -9,6 +9,23 @@ export const breakpoints = {
     xl: 1400,
 };
 
+export const colors = {
+    lightcolor: "#eee",
+    lightercolor: "#fff",
+    darkcolor: "#2f2f2f",
+    darkercolor: "#292929",
+};
+
+export const darkmodeEnabled = window.matchMedia("(prefers-color-scheme: dark)")
+    .matches;
+
+export const darktheme = {
+    primary: darkmodeEnabled ? colors.darkcolor : colors.lightercolor,
+    secondary: darkmodeEnabled ? colors.darkercolor : colors.lightcolor,
+    fontlight: darkmodeEnabled ? "#444" : "#fff",
+    fontdark: darkmodeEnabled ? "#fff" : "#444",
+};
+
 export var isMobile = window.innerWidth <= breakpoints.mobile;
 
 export const isMobileMediaQuery = `@media screen and (max-width: ${breakpoints.mobile}px)`;
@@ -33,7 +50,7 @@ export const GlobalStyle = createGlobalStyle`
     html,
     body {
         height: -webkit-fill-available;
-        background-color: rgb(245, 245, 245);
+        background-color: ${darktheme.primary};
     }
 
     #root {

@@ -5,12 +5,13 @@ import { v4 as uuidv4 } from "uuid";
 
 import { FaVideo } from "react-icons/fa";
 
-import { Flex } from "../../helpers/styles";
+import { darkmodeEnabled, darktheme, Flex } from "../../helpers/styles";
 
 import Button from "../../components/Button";
 
 import logo from "../../assets/images/letstalk-logo.png";
 import people_grid from "../../assets/images/people_grid.png";
+import { lighten } from "polished";
 
 const HeaderLogo = styled.img.attrs(() => ({
     src: logo,
@@ -35,6 +36,14 @@ const Container = styled(Flex)`
 
     min-width: 400px;
     max-width: 30vw;
+`;
+
+const Title = styled.h1`
+    color: ${lighten(-0.1, darktheme.fontdark)};
+`;
+
+const SubTitle = styled.h3`
+    color: ${lighten(-0.1, darktheme.fontdark)};
 `;
 
 const TabletContainer = styled.div`
@@ -72,6 +81,7 @@ const TextInput = styled.input`
     border: none;
     border-bottom: 2px solid #333;
     width: 100%;
+    color: ${darkmodeEnabled && darktheme.fontdark};
 `;
 
 function HomePage() {
@@ -116,14 +126,14 @@ function HomePage() {
                         }
                         margin="0 0 32px 0"
                     >
-                        <h1>
+                        <Title>
                             O que está esperando <br />
                             para começar um papo? Não custa nada!
-                        </h1>
-                        <h3>
+                        </Title>
+                        <SubTitle>
                             Começe criando uma nova reunião e envie o link para
                             seus amigos, ou acesse usando um código/link.
-                        </h3>
+                        </SubTitle>
                     </Container>
                     <Flex justifyContent="flex-start" width="100%">
                         <Button

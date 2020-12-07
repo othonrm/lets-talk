@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import io from "socket.io-client";
 
 import styled from "styled-components";
-import { Flex } from "../../helpers/styles";
+import { darkmodeEnabled, darktheme, Flex } from "../../helpers/styles";
 
 import {
     FaMicrophoneAlt,
@@ -18,6 +18,7 @@ import Button from "../../components/Button";
 import AudioLevels from "../../components/AudioLevels";
 
 import logo from "../../assets/images/letstalk-logo.png";
+import { lighten } from "polished";
 
 const Container = styled(Flex)`
     margin: auto;
@@ -81,13 +82,21 @@ const ControlsContainer = styled.div`
     justify-content: center;
 `;
 
+const Title = styled.h1`
+    color: ${lighten(-0.1, darktheme.fontdark)};
+`;
+
+const Text = styled.p`
+    color: ${lighten(-0.1, darktheme.fontdark)};
+`;
+
 const TextInput = styled.input`
     font-size: 18px;
     padding: 8px 16px;
-    /* border-radius: 6px; */
     background-color: transparent;
     border: none;
-    border-bottom: 2px solid #333;
+    border-bottom: 2px solid ${lighten(-0.5, darktheme.fontdark)};
+    color: ${darkmodeEnabled && darktheme.fontdark};
     width: 320px;
 `;
 
@@ -342,9 +351,9 @@ function PreviewPage({ ready, setReady, ...props }) {
                 <>
                     <Flex direction="column" margin="30px 0 0 0">
                         <Flex margin="0 0 16px 0">
-                            <h1>Tudo pronto para conectar?</h1>
+                            <Title>Tudo pronto para conectar?</Title>
                         </Flex>
-                        <p>Sala: {room_id}</p>
+                        <Text>Sala: {room_id}</Text>
 
                         <Flex direction="column" margin="32px 0 10px 0">
                             <TextInput
@@ -357,7 +366,7 @@ function PreviewPage({ ready, setReady, ...props }) {
                         </Flex>
 
                         <Flex direction="column" margin="10px 0 32px 0">
-                            <label>
+                            <Text as="label">
                                 <input
                                     type="checkbox"
                                     name="skip"
@@ -374,7 +383,7 @@ function PreviewPage({ ready, setReady, ...props }) {
                                     }
                                 />
                                 Pular próxima entrada nesta sala
-                            </label>
+                            </Text>
                         </Flex>
 
                         <Flex margin="0 0 16px 0">
@@ -391,15 +400,15 @@ function PreviewPage({ ready, setReady, ...props }) {
                 <>
                     <Flex direction="column" margin="30px 0 0 0">
                         <Flex margin="0 0 16px 0">
-                            <h1>
+                            <Title>
                                 Estamos avisando o pessoal que você quer entrar
                                 no papo
-                            </h1>
+                            </Title>
                         </Flex>
-                        <p>
+                        <Text>
                             Aguarde alguém aprovar sua entrada, não é legal
                             atravessar a conversa de ninguém...
-                        </p>
+                        </Text>
 
                         <Flex margin="0 0 16px 0">
                             <Button onClick={handleGiveUpKnocking}>

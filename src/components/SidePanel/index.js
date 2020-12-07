@@ -11,14 +11,15 @@ import {
     FaVideoSlash,
 } from "react-icons/fa";
 
-import { Flex } from "../../helpers/styles";
+import { darkmodeEnabled, darktheme, Flex } from "../../helpers/styles";
 import Button from "../Button";
+import { lighten } from "polished";
 
 const Container = styled.div`
     width: 350px;
     height: 100%;
     box-sizing: border-box;
-    background-color: #eee;
+    background-color: ${darktheme.secondary};
     overflow-x: hidden;
     transition: all 0.2s ease-in-out;
     margin-right: -350px;
@@ -44,7 +45,8 @@ const Container = styled.div`
 `;
 
 const UserContainer = styled.div`
-    background-color: #fff;
+    background-color: ${darktheme.primary};
+    color: ${darktheme.fontdark};
     box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
     width: 100%;
     padding: 10px 16px;
@@ -59,8 +61,13 @@ const UserContainer = styled.div`
     text-transform: capitalize;
 `;
 
+const TabTitle = styled.h4`
+    color: ${darktheme.fontdark};
+`;
+
 const Avatar = styled.div`
     background: #e6e690;
+    color: #444;
     padding: 6px;
     border-radius: 6px;
     margin-right: 10px;
@@ -96,8 +103,12 @@ const MessageContainer = styled.div`
 `;
 
 const InputContainer = styled(Flex)`
-    border-top: 2px solid #adadad;
-    background-color: #e3e3e3;
+    border-top: 2px solid
+        ${lighten(darkmodeEnabled ? -0.1 : -0.15, darktheme.primary)};
+    background-color: ${lighten(
+        darkmodeEnabled ? -0.05 : -0.1,
+        darktheme.primary
+    )};
     height: auto;
     padding: 8px 16px;
     width: 100%;
@@ -113,7 +124,7 @@ const MessageInput = styled.input`
     border-radius: 0px;
     padding: 0px;
     background-color: transparent;
-    color: #444;
+    color: ${darktheme.fontdark};
 `;
 
 function SidePanel() {
@@ -213,6 +224,7 @@ function SidePanel() {
                 <Flex width="100%" margin="12px 0 0 0">
                     <Button
                         outlined={tab !== "members"}
+                        color={tab !== "members" && darktheme.fontdark}
                         padding="8px 0px"
                         width="100px"
                         margin="0 30px 0 0"
@@ -222,6 +234,7 @@ function SidePanel() {
                     </Button>
                     <Button
                         outlined={tab !== "chat"}
+                        color={tab !== "chat" && darktheme.fontdark}
                         padding="8px 0px"
                         width="100px"
                         margin="0"
@@ -241,7 +254,7 @@ function SidePanel() {
                         padding="26px"
                         boxSizing="border-box"
                     >
-                        <h4>NA SALA ({roomMembers.length})</h4>
+                        <TabTitle>NA SALA ({roomMembers.length})</TabTitle>
 
                         <Flex
                             alignItems="flex-start"
@@ -420,6 +433,7 @@ function SidePanel() {
                                 padding="4px 12px"
                                 link
                                 onClick={handleSendMessage}
+                                color={darkmodeEnabled && darktheme.fontdark}
                             >
                                 Enviar
                             </Button>

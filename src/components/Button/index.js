@@ -49,6 +49,8 @@ const Container = styled.button`
             opacity: 0.7;
         `}
 
+    ${(props) => props.color && `color: ${props.color};`}
+
     & > *:not(:last-child) {
         margin-right: 8px;
     }

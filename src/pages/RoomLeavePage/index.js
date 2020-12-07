@@ -1,10 +1,16 @@
 import React from "react";
 import { Link, useHistory, useParams } from "react-router-dom";
 
-import { Flex } from "../../helpers/styles";
+import { darkmodeEnabled, darktheme, Flex } from "../../helpers/styles";
 
 import Button from "../../components/Button";
 import Logo from "../../components/Logo";
+import styled from "styled-components";
+import { lighten } from "polished";
+
+const Title = styled.h2`
+    color: ${lighten(-0.1, darktheme.fontdark)};
+`;
 
 function RoomLeavePage() {
     const { room_id } = useParams();
@@ -15,7 +21,7 @@ function RoomLeavePage() {
             <Logo />
 
             <Flex margin="32px 0">
-                <h2>Você encerrou o papo</h2>
+                <Title>Você encerrou o papo</Title>
             </Flex>
 
             <Flex>
@@ -23,6 +29,7 @@ function RoomLeavePage() {
                     outlined
                     margin="0 16px 0 0"
                     onClick={() => history.push(`/${room_id}`)}
+                    color={darkmodeEnabled && darktheme.fontdark}
                 >
                     Voltar ao papo
                 </Button>

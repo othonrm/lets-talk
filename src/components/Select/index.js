@@ -1,5 +1,7 @@
+import { lighten } from "polished";
 import React from "react";
 import styled, { css } from "styled-components";
+import { darktheme } from "../../helpers/styles";
 
 import { ReactComponent as CaretDown } from "./../../assets/images/caret-down.svg";
 
@@ -19,6 +21,7 @@ const Container = styled.div`
     justify-content: center;
     background-color: transparent;
     border: 1px solid rgb(55, 38, 176);
+    color: ${lighten(-0.1, darktheme.fontdark)};
     cursor: pointer;
 
     text-decoration: none;
@@ -54,7 +57,7 @@ const Container = styled.div`
     }
 
     & > select {
-        color: #444;
+        color: ${lighten(-0.1, darktheme.fontdark)};
         background-color: transparent;
         width: 100%;
         height: 100%;
@@ -70,7 +73,23 @@ const Container = styled.div`
         &:focus + ${Caret} {
             transform: scaleY(-1) translateY(50%);
         }
+
+        ${(props) =>
+            props.light &&
+            css`
+                color: #fff;
+            `}
+
+        option {
+            color: #444;
+        }
     }
+
+    ${(props) =>
+        props.light &&
+        css`
+            color: #fff;
+        `}
 `;
 
 const Append = styled.div`
