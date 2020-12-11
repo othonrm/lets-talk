@@ -41,7 +41,10 @@ function AudioLevels({ muted, mediaStream, className, ...props }) {
     const audioBarsRefs = [useRef(null), useRef(null), useRef(null)];
 
     useEffect(() => {
-        let _return = computeAudioLevel(mediaStream, audioBarsRefs);
+        let _return =
+            mediaStream &&
+            mediaStream.getAudioTracks().length > 0 &&
+            computeAudioLevel(mediaStream, audioBarsRefs);
 
         return () => {
             _return();

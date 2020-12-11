@@ -165,7 +165,7 @@ function PreviewPage({ ready, setReady, ...props }) {
         stopMediaTracks();
     };
 
-    const handleGetUserStream = () => {
+    const handleGetUserStream = async () => {
         const video = document.getElementById("user_video");
 
         if (!video) return;
@@ -179,34 +179,56 @@ function PreviewPage({ ready, setReady, ...props }) {
         let videoinput = localStorage.getItem("videoinput_device") || undefined;
 
         let constraints = {
-            video: videoinput ? { deviceId: videoinput } : true,
-            audio: audioinput ? { deviceId: audioinput } : true,
+            video: videoinput ? { deviceId: videoinput } : !videoDisabled,
+            audio: audioinput ? { deviceId: audioinput } : !audioMuted,
         };
 
-        getUserMedia(constraints)
-            .then(async (media_stream) => {
-                let audio_enabled = localStorage.getItem("audio_enabled");
-                let video_enabled = localStorage.getItem("video_enabled");
+        console.log(constraints);
 
-                if (audio_enabled === "true" || audio_enabled === "false") {
-                    media_stream.getAudioTracks()[0].enabled =
-                        audio_enabled === "true" ? true : false;
-                }
-                if (video_enabled === "true" || video_enabled === "false") {
-                    media_stream.getVideoTracks()[0].enabled =
-                        video_enabled === "true" ? true : false;
-                }
+        if (!constraints.audio && !constraints.video) {
+            setCurrentUserStream(null);
 
-                setCurrentUserStream(media_stream);
+            if (audiooutput) await video.setSinkId(audiooutput);
 
-                if (audiooutput) await video.setSinkId(audiooutput);
+            video.srcObject = null;
+            video.addEventListener("loadedmetadata", () => {
+                video.play();
+            });
+        } else
+            getUserMedia(constraints)
+                .then(async (media_stream) => {
+                    let audio_enabled = localStorage.getItem("audio_enabled");
+                    let video_enabled = localStorage.getItem("video_enabled");
 
-                video.srcObject = media_stream;
-                video.addEventListener("loadedmetadata", () => {
-                    video.play();
-                });
-            })
-            .catch((reason) => alert("Cannot get video because: " + reason));
+                    if (
+                        (audio_enabled === "true" ||
+                            audio_enabled === "false") &&
+                        media_stream.getAudioTracks()[0]
+                    ) {
+                        media_stream.getAudioTracks()[0].enabled =
+                            audio_enabled === "true" ? true : false;
+                    }
+                    if (
+                        (video_enabled === "true" ||
+                            video_enabled === "false") &&
+                        media_stream.getVideoTracks()[0]
+                    ) {
+                        media_stream.getVideoTracks()[0].enabled =
+                            video_enabled === "true" ? true : false;
+                    }
+
+                    setCurrentUserStream(media_stream);
+
+                    if (audiooutput) await video.setSinkId(audiooutput);
+
+                    video.srcObject = media_stream;
+                    video.addEventListener("loadedmetadata", () => {
+                        video.play();
+                    });
+                })
+                .catch((reason) =>
+                    alert("Cannot get video because: " + reason)
+                );
     };
 
     const handleChangeName = (e) => {
@@ -220,27 +242,80 @@ function PreviewPage({ ready, setReady, ...props }) {
     };
 
     const toggleMute = () => {
-        currentUserStream.getAudioTracks()[0].enabled = !currentUserStream.getAudioTracks()[0]
-            .enabled;
+        let enabled;
 
-        setAudioMuted(!currentUserStream.getAudioTracks()[0].enabled);
+        if (
+            !currentUserStream.getAudioTracks()[0] ||
+            !currentUserStream.getAudioTracks()[0].enabled ||
+            currentUserStream.getAudioTracks()[0].readyState === "ended"
+        ) {
+            getUserMedia({ video: false, audio: true }).then(
+                async (media_stream) => {
+                    if (currentUserStream.getAudioTracks()[0])
+                        currentUserStream.removeTrack(
+                            currentUserStream.getAudioTracks()[0]
+                        );
+                    currentUserStream.addTrack(
+                        media_stream.getAudioTracks()[0]
+                    );
 
-        localStorage.setItem(
-            "audio_enabled",
-            currentUserStream.getAudioTracks()[0].enabled
-        );
+                    setCurrentUserStream(currentUserStream);
+                }
+            );
+            enabled = true;
+        } else {
+            currentUserStream.getAudioTracks().forEach((track) => {
+                track.enabled = false;
+                track.stop();
+                currentUserStream.removeTrack(track);
+            });
+            enabled = false;
+        }
+
+        console.log(currentUserStream.getTracks());
+
+        setAudioMuted(!enabled);
+
+        localStorage.setItem("audio_enabled", enabled);
     };
 
     const toggleVideo = () => {
-        currentUserStream.getVideoTracks()[0].enabled = !currentUserStream.getVideoTracks()[0]
-            .enabled;
+        let enabled;
 
-        setVideoDisabled(!currentUserStream.getVideoTracks()[0].enabled);
+        if (
+            !currentUserStream ||
+            !currentUserStream.getVideoTracks()[0] ||
+            !currentUserStream.getVideoTracks()[0].enabled ||
+            currentUserStream.getVideoTracks()[0].readyState === "ended"
+        ) {
+            getUserMedia({ video: true, audio: false }).then(
+                async (media_stream) => {
+                    let tempStream = currentUserStream || media_stream;
 
-        localStorage.setItem(
-            "video_enabled",
-            currentUserStream.getVideoTracks()[0].enabled
-        );
+                    tempStream.getVideoTracks().forEach((track) => {
+                        tempStream.removeTrack(track);
+                    });
+
+                    tempStream.addTrack(media_stream.getVideoTracks()[0]);
+
+                    setCurrentUserStream(tempStream);
+                }
+            );
+            enabled = true;
+        } else {
+            currentUserStream.getVideoTracks().forEach((track) => {
+                track.enabled = false;
+                track.stop();
+                currentUserStream.removeTrack(track);
+            });
+            enabled = false;
+        }
+
+        console.log(currentUserStream && currentUserStream.getTracks());
+
+        setVideoDisabled(!enabled);
+
+        localStorage.setItem("video_enabled", enabled);
     };
 
     const checkNameValidity = () => {
@@ -299,12 +374,12 @@ function PreviewPage({ ready, setReady, ...props }) {
 
             {!skipPreview && (
                 <VideoContainer>
-                    {!currentUserStream && (
+                    {currentUserStream === undefined && (
                         <NoVideo>
                             <h3>Estamos iniciando seu vídeo</h3>
                         </NoVideo>
                     )}
-                    {currentUserStream && videoDisabled && (
+                    {currentUserStream !== undefined && videoDisabled && (
                         <NoVideo>
                             <h3>Seu vídeo está desligado</h3>
                         </NoVideo>
@@ -312,14 +387,14 @@ function PreviewPage({ ready, setReady, ...props }) {
 
                     <video id="user_video" />
 
-                    {currentUserStream && (
+                    {currentUserStream !== undefined && (
                         <AudioLevels
                             muted={audioMuted}
                             mediaStream={currentUserStream}
                         />
                     )}
 
-                    {currentUserStream && (
+                    {currentUserStream !== undefined && (
                         <ControlsContainer>
                             <RoundedButton
                                 muted={audioMuted}

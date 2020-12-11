@@ -197,7 +197,7 @@ function RoomPage() {
     const [ready, setReady] = useState(false);
 
     const handleLeaveRoom = () => {
-        setReady(false);
+        // setReady(false);
 
         window.leaveRoom();
     };

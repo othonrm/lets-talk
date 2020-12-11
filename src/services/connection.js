@@ -7,6 +7,7 @@ import styled from "styled-components";
 import {
     addVideoStream,
     computeAudioLevel,
+    dummyTrack,
     replaceSenderTrack,
     useForceUpdate,
 } from "../helpers";
@@ -55,7 +56,8 @@ const connectSocketNPeer = (callback) => {
     callback && callback();
 };
 
-const Connection = ({ handleLeaveRoom, ...props }) => {
+function Connection({ handleLeaveRoom, ...props }) {
+    const { getUserMedia } = navigator.mediaDevices;
     const { room_id } = useParams();
     const history = useHistory();
 
@@ -74,6 +76,7 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
             ? localStorage.getItem("user_name")
             : "Guest";
     const myVideoElement = document.createElement("video");
+    const myScreenVideoElement = document.createElement("video");
 
     const [startedMedia, setStartedMedia] = useState(undefined);
     const [currentUserStream, setCurrentUserStream] = useState(undefined);
@@ -124,6 +127,7 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
     }
 
     const myVideoRef = useRef(myVideoElement);
+    const myScreenVideoRef = useRef(myScreenVideoElement);
 
     useEffect(() => {
         return () => {
@@ -146,12 +150,16 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
     useEffect(() => {
         myVideoElement.muted = true;
 
+        let audioinput = localStorage.getItem("audioinput_device") || undefined;
+        let videoinput = localStorage.getItem("videoinput_device") || undefined;
+
+        let constraints = {
+            video: videoinput ? { deviceId: videoinput } : !videoDisabled,
+            audio: audioinput ? { deviceId: audioinput } : true,
+        };
+
         if (!startedMedia) {
-            navigator.mediaDevices
-                .getUserMedia({
-                    video: true,
-                    audio: true,
-                })
+            getUserMedia(constraints)
                 .then((media_stream) => {
                     let audio_enabled = localStorage.getItem("audio_enabled");
                     let video_enabled = localStorage.getItem("video_enabled");
@@ -160,15 +168,36 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
                         media_stream.getAudioTracks()[0].enabled =
                             audio_enabled === "true" ? true : false;
                     }
-                    if (video_enabled === "true" || video_enabled === "false") {
+                    if (
+                        (video_enabled === "true" ||
+                            video_enabled === "false") &&
+                        media_stream.getVideoTracks()[0]
+                    ) {
                         media_stream.getVideoTracks()[0].enabled =
                             video_enabled === "true" ? true : false;
                     }
+
+                    let dummy_track = dummyTrack().getVideoTracks()[0];
+
+                    dummy_track.enabled = true;
+                    dummy_track.kind2 = "screen";
+
+                    dummy_track.stop();
+
+                    console.log(dummy_track);
+
+                    media_stream.addTrack(dummy_track);
+
+                    console.log(
+                        "MY VIDEO TRACKS: ",
+                        media_stream.getVideoTracks()
+                    );
 
                     setCurrentUserStream(media_stream);
 
                     addVideoStream(
                         myVideoElement,
+                        myScreenVideoElement,
                         media_stream,
                         myId,
                         currentUserName
@@ -219,7 +248,28 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
                     "2px solid #c16bd5";
                 myVideoRef.current.parentElement.querySelector(
                     "video"
-                ).style.transform = screenSharing ? "" : "scaleX(-1)";
+                ).style.transform = "scaleX(-1)";
+            }
+
+            if (
+                myScreenVideoRef.current &&
+                myScreenVideoRef.current.parentElement
+            ) {
+                const userIdElement = myScreenVideoRef.current.parentElement.querySelector(
+                    ".user_id"
+                );
+                const userNameElement = myScreenVideoRef.current.parentElement.querySelector(
+                    ".user_name"
+                );
+                if (userIdElement) userIdElement.innerHTML = myId + "_screen";
+
+                if (userIdElement)
+                    userNameElement.innerHTML =
+                        (currentUserName || "Guest") + " (Compartilhando Tela)";
+
+                myScreenVideoRef.current.parentElement.id = myId + "_screen";
+                myScreenVideoRef.current.parentElement.style.border =
+                    "2px solid #c16bd5";
             }
         }
 
@@ -299,7 +349,7 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
         });
 
         socket.on("disconnect", (reason) => {
-            // leaveRoom();
+            leaveRoom();
         });
 
         socket.on("user-connected", (userId, userName) => {
@@ -324,6 +374,8 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
 
             document.getElementById(userId) &&
                 document.getElementById(userId).remove();
+            document.getElementById(userId + "_screen") &&
+                document.getElementById(userId + "_screen").remove();
         });
 
         socket.on("room-lock", (roomLockStatus) => {
@@ -364,7 +416,9 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
                 peer_id,
                 currentUserName,
                 localStorage.getItem("locked_room_pass"),
-                currentUserStream.getVideoTracks()[0].enabled,
+                currentUserStream.getVideoTracks()[0]
+                    ? currentUserStream.getVideoTracks()[0].enabled
+                    : false,
                 currentUserStream.getAudioTracks()[0].enabled
             );
         });
@@ -385,18 +439,29 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
 
     const leaveRoom = () => {
         currentUserStream &&
-            currentUserStream.getTracks().forEach((track) => track.stop());
+            currentUserStream.getTracks().forEach((track) => {
+                track.enabled = false;
+            });
 
-        history.push(`/${room_id}/out`);
+        setTimeout(() => {
+            currentUserStream &&
+                currentUserStream.getTracks().forEach((track) => {
+                    track.stop();
+                });
+        }, 500);
 
-        peer && peer.removeAllListeners();
-        socket && socket.removeAllListeners();
+        setTimeout(() => {
+            history.push(`/${room_id}/out`);
 
-        peer && peer.destroy();
-        socket && socket.disconnect();
-        socket && socket.close();
+            peer && peer.removeAllListeners();
+            socket && socket.removeAllListeners();
 
-        window.location.reload();
+            peer && peer.destroy();
+            socket && socket.disconnect();
+            socket && socket.close();
+
+            // setTimeout(window.location.reload, 500);
+        }, 1000);
     };
 
     window.leaveRoom = leaveRoom;
@@ -411,7 +476,13 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
         setScreenSharing(false);
         setCurrentDisplayStream(undefined);
 
-        replaceSenderTrack(peerConnections, currentUserStream, myVideoRef);
+        socket.emit("toggle-track", "screen", false);
+
+        replaceSenderTrack(
+            peerConnections,
+            currentUserStream,
+            myScreenVideoRef
+        );
     };
 
     window.stopScreenShare = stopScreenShare;
@@ -432,6 +503,7 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
                 let videoTrack = display_stream.getVideoTracks()[0];
 
                 videoTrack.onended = function () {
+                    videoTrack.enabled = false;
                     stopScreenShare(display_stream);
                 };
 
@@ -441,10 +513,21 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
                     return [...acc, curr.peerConnection];
                 }, []);
 
-                setScreenSharing(true);
-                setCurrentDisplayStream(display_stream);
+                display_stream.addTrack(
+                    currentUserStream
+                        .getVideoTracks()
+                        .find((item) => item.kind === "video")
+                );
 
-                replaceSenderTrack(peerConnections, display_stream, myVideoRef);
+                socket.emit("toggle-track", "screen", true);
+
+                setScreenSharing(true);
+
+                replaceSenderTrack(
+                    peerConnections,
+                    display_stream,
+                    myScreenVideoRef
+                );
             })
             .catch((reason) =>
                 console.error("Cannot get display because: ", reason)
@@ -504,22 +587,57 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
     window.toggleMute = toggleMute;
 
     const toggleVideo = () => {
-        const videoEnabled = currentUserStream.getVideoTracks()[0].enabled;
+        let enabled;
 
-        if (videoEnabled) {
+        if (currentUserStream.getVideoTracks()[0]) {
             currentUserStream.getVideoTracks()[0].enabled = false;
-        } else {
-            currentUserStream.getVideoTracks()[0].enabled = true;
         }
 
-        window.videoDisabled = !currentUserStream.getVideoTracks()[0].enabled;
-        setVideoDisabled(window.videoDisabled);
+        if (
+            !currentUserStream.getVideoTracks()[0] ||
+            currentUserStream.getVideoTracks()[0].readyState === "ended"
+        ) {
+            getUserMedia({ video: true, audio: false }).then(
+                async (media_stream) => {
+                    if (currentUserStream.getVideoTracks()[0])
+                        currentUserStream.removeTrack(
+                            currentUserStream.getVideoTracks()[0]
+                        );
+                    currentUserStream.addTrack(
+                        media_stream.getVideoTracks()[0]
+                    );
 
-        socket.emit(
-            "toggle-track",
-            "video",
-            currentUserStream.getVideoTracks()[0].enabled
-        );
+                    let peerConnections = Object.values({
+                        ...connectedUsers,
+                    }).reduce((acc, curr) => {
+                        return [...acc, curr.peerConnection];
+                    }, []);
+
+                    replaceSenderTrack(
+                        peerConnections,
+                        media_stream,
+                        myVideoRef
+                    );
+                }
+            );
+
+            enabled = true;
+        } else {
+            setTimeout(() => {
+                currentUserStream.getVideoTracks().forEach((track) => {
+                    track.enabled = false;
+                    track.stop();
+                    currentUserStream.removeTrack(track);
+                });
+            }, 1000);
+            enabled = false;
+        }
+
+        setVideoDisabled(!enabled);
+
+        localStorage.setItem("video_enabled", enabled);
+
+        socket.emit("toggle-track", "video", enabled);
     };
 
     window.toggleVideo = toggleVideo;
@@ -595,18 +713,19 @@ const Connection = ({ handleLeaveRoom, ...props }) => {
             </VideoControls>
         </>
     );
-};
+}
 
 const connectToNewUser = (stream, userId, userName, myUserName) => {
     const call = peer.call(userId, stream, {
         metadata: { username: myUserName },
     });
     const video = document.createElement("video");
+    const screenvideo = document.createElement("video");
 
     call.on("stream", function (callStream) {
         if (connectedUsers[userId]) return;
 
-        addVideoStream(video, callStream, userId, userName);
+        addVideoStream(video, screenvideo, callStream, userId, userName);
 
         connectedUsers[userId] = call;
 
@@ -616,26 +735,37 @@ const connectToNewUser = (stream, userId, userName, myUserName) => {
     call.on("close", () => {
         document.getElementById(call.peer) &&
             document.getElementById(call.peer).remove();
+        document.getElementById(call.peer + "_screen") &&
+            document.getElementById(call.peer + "_screen").remove();
     });
 };
 
 const answerCall = (call, stream, myId) => {
-    console.log("answering call");
+    window.answer_stream = stream;
 
     call.answer(stream);
 
     const video = document.createElement("video");
+    const screenvideo = document.createElement("video");
     let userContainer;
 
     call.on("stream", function (callStream) {
+        console.log(callStream, callStream.getTracks());
+
         if (connectedUsers[call.peer]) return;
 
         userContainer = addVideoStream(
             video,
+            screenvideo,
             callStream,
             call.peer,
             call.metadata.username
         );
+
+        call.peerConnection.ontrack = (e) => {
+            window.changed2 = e;
+            console.log("ontrack", e);
+        };
 
         connectedUsers[call.peer] = call;
     });
@@ -643,11 +773,15 @@ const answerCall = (call, stream, myId) => {
     call.on("disconnected", () => {
         delete connectedUsers[call.peer];
         userContainer && userContainer.remove && userContainer.remove();
+        document.getElementById(call.peer + "_screen") &&
+            document.getElementById(call.peer + "_screen").remove();
     });
 
     call.on("close", () => {
         delete connectedUsers[call.peer];
         userContainer && userContainer.remove && userContainer.remove();
+        document.getElementById(call.peer + "_screen") &&
+            document.getElementById(call.peer + "_screen").remove();
     });
 };
 

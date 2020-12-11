@@ -14,6 +14,7 @@ import {
 import { darkmodeEnabled, darktheme, Flex } from "../../helpers/styles";
 import Button from "../Button";
 import { lighten } from "polished";
+import { setFocus } from "../../helpers";
 
 const Container = styled.div`
     width: 350px;
@@ -191,6 +192,69 @@ function SidePanel() {
 
         // eslint-disable-next-line
     }, [socket, messages]);
+
+    useEffect(() => {
+        let focused_elements = document.querySelectorAll(
+            "#video_grid > .video_container"
+        );
+        let video_containers = document.querySelectorAll(
+            ".video_container:not(.screen)"
+        );
+
+        console.log(video_containers);
+
+        roomMembers &&
+            roomMembers.forEach((member) => {
+                if (member.screen === true) {
+                    let tries = 10;
+
+                    const waitForUserScreen = () => {
+                        console.log("waiting for user screen");
+                        tries--;
+
+                        if (tries < 0) return;
+
+                        const member_screen = document.getElementById(
+                            `${member.id}_screen`
+                        );
+
+                        if (!member_screen) {
+                            setTimeout(waitForUserScreen, 500);
+                        } else {
+                            member_screen.style.display = "";
+
+                            if (focused_elements.length > 1) {
+                                setFocus(`${member.id}_screen`);
+                            }
+                        }
+                    };
+
+                    waitForUserScreen();
+                } else {
+                    const member_screen = document.getElementById(
+                        `${member.id}_screen`
+                    );
+                    if (member_screen) member_screen.style.display = "none";
+                }
+            });
+
+        if (focused_elements.length === 0 && video_containers.length > 0) {
+            let sharingScreenUser = roomMembers.find(
+                (item) => item.screen === true
+            );
+
+            if (
+                sharingScreenUser &&
+                document.getElementById(`${sharingScreenUser.id}_screen`)
+            ) {
+                setFocus(`${sharingScreenUser.id}_screen`);
+            } else {
+                setFocus(video_containers[0].id);
+            }
+        }
+
+        // eslint-disable-next-line
+    }, [roomMembers]);
 
     const toggleSidePanel = () => {
         window.sidePanelActive =
