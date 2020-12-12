@@ -1,7 +1,7 @@
 import React from "react";
 
 import { FaExpand } from "react-icons/fa";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
 const Container = styled.button`
     position: absolute;
@@ -18,17 +18,26 @@ const Container = styled.button`
     border: none;
     font-size: 20px;
     cursor: pointer;
-
     z-index: 10;
+
+    ${(props) =>
+        props.pip &&
+        css`
+            margin-right: 55px;
+        `}
 
     &.hide {
         display: none;
     }
 `;
 
-function FullscreenButton() {
+function FullscreenButton({ handleClick, pip }) {
     return (
-        <Container className="fullscreen_button">
+        <Container
+            pip={pip}
+            onClick={handleClick}
+            className="fullscreen_button"
+        >
             <FaExpand />
         </Container>
     );

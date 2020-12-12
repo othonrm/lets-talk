@@ -19,6 +19,7 @@ import AudioLevels from "../../components/AudioLevels";
 
 import logo from "../../assets/images/letstalk-logo.png";
 import { lighten } from "polished";
+import { dummyAudioTrack, dummyVideoTrack } from "../../helpers";
 
 const Container = styled(Flex)`
     margin: auto;
@@ -108,8 +109,6 @@ const connectSocket = (handleEnterRoom) => {
     );
 
     socket.on("allowed-to-enter", (allowed, pass) => {
-        console.log("allowed-to-enter: " + allowed, pass);
-
         if (pass !== undefined) {
             localStorage.setItem(`locked_room_pass`, pass);
         } else {
@@ -161,6 +160,19 @@ function PreviewPage({ ready, setReady, ...props }) {
         // eslint-disable-next-line
     }, []);
 
+    useEffect(() => {
+        const video = document.getElementById("user_video");
+
+        if (currentUserStream && video) {
+            video.srcObject = currentUserStream;
+            video.addEventListener("loadedmetadata", () => {
+                video.play();
+            });
+        }
+
+        // eslint-disable-next-line
+    }, [currentUserStream]);
+
     window.onChangeMediaDevices = () => {
         stopMediaTracks();
     };
@@ -183,14 +195,19 @@ function PreviewPage({ ready, setReady, ...props }) {
             audio: audioinput ? { deviceId: audioinput } : !audioMuted,
         };
 
-        console.log(constraints);
-
         if (!constraints.audio && !constraints.video) {
-            setCurrentUserStream(null);
+            let audioTrack = dummyAudioTrack();
+            audioTrack.stop();
+
+            let videoTrack = dummyVideoTrack();
+            videoTrack.stop();
+
+            const mediaStream = new MediaStream([audioTrack, videoTrack]);
+            setCurrentUserStream(mediaStream);
 
             if (audiooutput) await video.setSinkId(audiooutput);
 
-            video.srcObject = null;
+            video.srcObject = mediaStream;
             video.addEventListener("loadedmetadata", () => {
                 video.play();
             });
@@ -251,15 +268,13 @@ function PreviewPage({ ready, setReady, ...props }) {
         ) {
             getUserMedia({ video: false, audio: true }).then(
                 async (media_stream) => {
-                    if (currentUserStream.getAudioTracks()[0])
-                        currentUserStream.removeTrack(
-                            currentUserStream.getAudioTracks()[0]
-                        );
-                    currentUserStream.addTrack(
-                        media_stream.getAudioTracks()[0]
+                    setCurrentUserStream(
+                        new MediaStream([
+                            media_stream.getAudioTracks()[0],
+                            currentUserStream.getVideoTracks()[0] ||
+                                dummyVideoTrack(),
+                        ])
                     );
-
-                    setCurrentUserStream(currentUserStream);
                 }
             );
             enabled = true;
@@ -271,8 +286,6 @@ function PreviewPage({ ready, setReady, ...props }) {
             });
             enabled = false;
         }
-
-        console.log(currentUserStream.getTracks());
 
         setAudioMuted(!enabled);
 
@@ -290,15 +303,13 @@ function PreviewPage({ ready, setReady, ...props }) {
         ) {
             getUserMedia({ video: true, audio: false }).then(
                 async (media_stream) => {
-                    let tempStream = currentUserStream || media_stream;
-
-                    tempStream.getVideoTracks().forEach((track) => {
-                        tempStream.removeTrack(track);
-                    });
-
-                    tempStream.addTrack(media_stream.getVideoTracks()[0]);
-
-                    setCurrentUserStream(tempStream);
+                    setCurrentUserStream(
+                        new MediaStream([
+                            currentUserStream.getAudioTracks()[0] ||
+                                dummyAudioTrack(),
+                            media_stream.getVideoTracks()[0],
+                        ])
+                    );
                 }
             );
             enabled = true;
@@ -310,8 +321,6 @@ function PreviewPage({ ready, setReady, ...props }) {
             });
             enabled = false;
         }
-
-        console.log(currentUserStream && currentUserStream.getTracks());
 
         setVideoDisabled(!enabled);
 
@@ -338,11 +347,10 @@ function PreviewPage({ ready, setReady, ...props }) {
                 track.stop();
             });
 
-        handleGetUserStream(null, document.getElementById("user_video"));
+        handleGetUserStream();
     };
 
     const handleRequestToEnter = () => {
-        console.log(name !== "");
         if (
             (!name ||
                 name.toString().trim().length === 0 ||

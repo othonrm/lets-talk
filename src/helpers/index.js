@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { renderToString } from "react-dom/server";
-import FullscreenButton from "../components/FullscreenButton";
 
 window.refreshAudioOutputDevice = () => {
     let audiooutput = localStorage.getItem("audiooutput_device");
@@ -18,147 +16,6 @@ window.refreshAudioOutputDevice = () => {
         });
 };
 
-export const addVideoStream = async (
-    video,
-    screenVideo,
-    stream,
-    userId,
-    userName
-) => {
-    window.streams = [...(window.streams || []), stream];
-
-    let audiooutput = localStorage.getItem("audiooutput_device");
-
-    if (
-        audiooutput !== undefined &&
-        audiooutput !== null &&
-        audiooutput !== ""
-    ) {
-        await video.setSinkId(audiooutput);
-    }
-
-    if (document.getElementById(userId)) return;
-
-    if (
-        stream.getVideoTracks().length > 1 &&
-        stream.getVideoTracks()[1].enabled
-    ) {
-        if (!screenVideo)
-            console.error(
-                "Not possible to add screen sharing, no video element provided"
-            );
-
-        let new_stream = new MediaStream([stream.getVideoTracks()[1]]);
-
-        screenVideo.srcObject = new_stream;
-
-        screenVideo.addEventListener("loadedmetadata", () => {
-            screenVideo.play();
-        });
-
-        let video_container = document.createElement("div");
-        let id_text = document.createElement("p");
-        let user_text = document.createElement("p");
-
-        id_text.innerHTML = userId + "_screen";
-        id_text.className = "user_id";
-
-        user_text.innerHTML =
-            userName.toString().toLocaleLowerCase("pt-BR") +
-            " (Compartilhando Tela)";
-        user_text.className = "user_name";
-
-        video_container.className = "video_container screen";
-
-        video_container.id = userId + "_screen";
-
-        video_container.innerHTML = renderToString(<FullscreenButton />);
-        let fullscreen_button = video_container.querySelector(
-            ".fullscreen_button"
-        );
-
-        document.addEventListener("fullscreenchange", (e) => {
-            if (document.fullscreenElement) {
-                fullscreen_button.classList.add("hide");
-            } else {
-                fullscreen_button.classList.remove("hide");
-            }
-        });
-
-        fullscreen_button.onclick = () => {
-            fullscreen_button.parentNode.requestFullscreen();
-        };
-
-        video_container.append(screenVideo);
-        video_container.append(id_text);
-        video_container.append(user_text);
-
-        video_container.ondblclick = (e) => setFocus(video_container.id);
-        video_container.style.display = "none";
-
-        let minimized_list = document.getElementById("minimized_list");
-        let video_grid = document.getElementById("video_grid");
-
-        if (minimized_list.classList.contains("show")) {
-            minimized_list.append(video_container);
-        } else {
-            video_grid.append(video_container);
-        }
-    }
-
-    video.srcObject = stream;
-
-    video.addEventListener("loadedmetadata", () => {
-        video.play();
-    });
-
-    let video_container = document.createElement("div");
-    let id_text = document.createElement("p");
-    let user_text = document.createElement("p");
-
-    id_text.innerHTML = userId;
-    id_text.className = "user_id";
-
-    user_text.innerHTML = userName.toString().toLocaleLowerCase("pt-BR");
-    user_text.className = "user_name";
-
-    video_container.className = "video_container";
-
-    video_container.id = userId;
-
-    video_container.innerHTML = renderToString(<FullscreenButton />);
-    let fullscreen_button = video_container.querySelector(".fullscreen_button");
-
-    document.addEventListener("fullscreenchange", (e) => {
-        if (document.fullscreenElement) {
-            fullscreen_button.classList.add("hide");
-        } else {
-            fullscreen_button.classList.remove("hide");
-        }
-    });
-
-    fullscreen_button.onclick = () => {
-        fullscreen_button.parentNode.requestFullscreen();
-    };
-
-    video_container.append(video);
-    video_container.append(id_text);
-    video_container.append(user_text);
-
-    video_container.ondblclick = (e) => setFocus(video_container.id);
-
-    let minimized_list = document.getElementById("minimized_list");
-    let video_grid = document.getElementById("video_grid");
-
-    if (minimized_list.classList.contains("show")) {
-        minimized_list.append(video_container);
-    } else {
-        video_grid.append(video_container);
-    }
-
-    return video_container;
-};
-
 export const useForceUpdate = () => {
     // eslint-disable-next-line
     const [value, setValue] = useState(0);
@@ -166,7 +23,7 @@ export const useForceUpdate = () => {
     return () => setValue((value) => ++value);
 };
 
-export const dummyTrack = () => {
+export const dummyStream = () => {
     let silence = () => {
         let ctx = new AudioContext(),
             oscillator = ctx.createOscillator();
@@ -190,58 +47,68 @@ export const dummyTrack = () => {
     let blackSilence = (...args) =>
         new MediaStream([black(...args), silence()]);
 
-    let video = document.createElement("video");
-
-    video.srcObject = blackSilence({ width: 640, height: 480 });
-
-    video.addEventListener("loadedmetadata", () => {
-        video.play();
-
-        console.log("PLAAAY");
-    });
-
-    return video.srcObject;
+    return blackSilence({ width: 640, height: 480 });
 };
 
-export const replaceSenderTrack = (
-    peerConnections,
-    stream,
-    myScreenVideoRef
-) => {
-    // let tracks = stream.getTracks();
+export const dummyVideoTrack = () => {
+    let track = dummyStream().getVideoTracks()[0];
+    // track.enabled = false;
+    return track;
+};
 
-    peerConnections.forEach((item, index) => {
+export const dummyAudioTrack = () => {
+    let track = dummyStream().getAudioTracks()[0];
+    // track.enabled = false;
+    return track;
+};
+
+export const replaceSenderTrack = (peerConnections, stream, type) => {
+    if (!type) return;
+
+    peerConnections.forEach((item) => {
         if (!item) return;
 
         let senders = item.getSenders().filter(function (s) {
-            return s.track === null || s.track.kind === "video";
+            return type === "video" || type === "screen"
+                ? s.track === null || s.track.kind === "video"
+                : type === "audio"
+                ? s.track.kind === "audio"
+                : false;
         });
 
-        senders[0].replaceTrack(
-            stream
-                .getVideoTracks()
-                .find((item) => !item.kind2 && item.label.indexOf("screen") < 0)
-        );
-        senders[1].replaceTrack(
-            stream
-                .getVideoTracks()
-                .find((item) => item.kind2 || item.label.indexOf("screen") >= 0)
-        );
+        if (type === "video" && senders[0]) {
+            senders[0].replaceTrack(
+                stream
+                    .getVideoTracks()
+                    .find(
+                        (item) =>
+                            !item.kind2 && item.label.indexOf("screen") < 0
+                    )
+            );
+        } else if (type === "screen" && senders[1]) {
+            senders[1].replaceTrack(
+                stream
+                    .getVideoTracks()
+                    .find(
+                        (item) =>
+                            item.kind2 || item.label.indexOf("screen") >= 0
+                    )
+            );
+        } else if (type === "audio" && senders[0].track.kind === "audio") {
+            senders[0].replaceTrack(stream.getAudioTracks()[0]);
+        }
     });
-
-    if (myScreenVideoRef.current) myScreenVideoRef.current.srcObject = stream;
 };
 
 export const setFocus = (focus_id) => {
-    console.log("focusing on: " + focus_id);
-
     let focus_element = document.getElementById(focus_id);
     let minimized_list = document.getElementById("minimized_list");
     let video_grid = document.getElementById("video_grid");
 
     if (
-        focus_element.parentNode.id !== "video_grid" ||
-        !minimized_list.classList.contains("show")
+        focus_element &&
+        (focus_element.parentNode.id !== "video_grid" ||
+            !minimized_list.classList.contains("show"))
     ) {
         document.querySelectorAll(".video_container").forEach((el) => {
             if (el.id !== focus_id) {
@@ -280,7 +147,17 @@ export const computeAudioLevel = (media_stream, audioBarsRefs) => {
     analyser.connect(javascriptNode);
     javascriptNode.connect(audioContext.destination);
 
-    javascriptNode.onaudioprocess = function () {
+    const onAudio = () => {
+        if (
+            !media_stream.getAudioTracks()[0] ||
+            !media_stream.getAudioTracks()[0].enabled ||
+            media_stream.getAudioTracks()[0].muted ||
+            media_stream.getAudioTracks()[0].readyState === "ended"
+        ) {
+            javascriptNode.removeEventListener("audioprocess", onAudio);
+            return;
+        }
+
         var array = new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(array);
         var values = 0;
@@ -300,10 +177,31 @@ export const computeAudioLevel = (media_stream, audioBarsRefs) => {
         });
     };
 
-    return () => {
+    javascriptNode.onaudioprocess = onAudio;
+
+    const removeListener = () => {
         javascriptNode.removeEventListener(
             javascriptNode,
             javascriptNode.onaudioprocess
         );
     };
+
+    return removeListener;
+};
+
+export const getInitals = (name = "Guest") => {
+    let firstInitial = "G";
+    let secondInitial = "";
+
+    name = name.trim().split(" ");
+
+    if (name.length > 0) {
+        firstInitial = name[0][0];
+
+        if (name.length > 1) {
+            secondInitial = name[1][0];
+        }
+    }
+
+    return firstInitial + secondInitial;
 };

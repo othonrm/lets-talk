@@ -20,8 +20,6 @@ const peerServer = ExpressPeerServer(server, {
     debug: true,
 });
 
-console.log(process.env.NODE_ENV);
-
 app.use((req, res, next) => {
     const allowedOrigins =
         process.env.NODE_ENV !== "production"
@@ -80,8 +78,6 @@ let allowed_users = {};
 
 io.on("connection", (socket) => {
     socket.on("knock-room", (roomId, userName) => {
-        console.log("user knocking: " + roomId + " - " + userName);
-
         if (!rooms[roomId] || rooms[roomId].locked !== true) {
             io.to(socket.id).emit("allowed-to-enter", true);
         } else {
@@ -118,10 +114,6 @@ io.on("connection", (socket) => {
                 (!allowed_users[roomId] ||
                     !allowed_users[roomId].find((item) => item === pass))
             ) {
-                console.log("Pass not allowed: " + pass, allowed_users[roomId]);
-
-                console.log(`User: ${userId}, Invade Room: ${roomId}`);
-
                 io.to(socket.id).emit("invaded-not-allowed");
 
                 return;
@@ -134,8 +126,6 @@ io.on("connection", (socket) => {
                 //     ...allowed_users[roomId].filter((item) => item !== pass),
                 // ];
             }
-
-            console.log(`User: ${userId}, Joined Room: ${roomId}`);
 
             socket.join(roomId);
 
@@ -166,9 +156,6 @@ io.on("connection", (socket) => {
                         delete rooms[roomId];
                     } else {
                         if (rooms[roomId].owner === socket.id) {
-                            console.log(
-                                `Owner diconecting set another onwer: ${roomId} ${rooms[roomId].users[0].socket}`
-                            );
                             rooms[roomId].owner = rooms[roomId].users[0].socket;
                             io.to(roomId).emit(
                                 "room-owner",
@@ -180,17 +167,9 @@ io.on("connection", (socket) => {
 
                 rooms[roomId] &&
                     io.to(roomId).emit("room-members", rooms[roomId].users);
-
-                // console.log(rooms);
             });
 
             socket.on("toggle-track", (track, enabled) => {
-                console.log(
-                    `User ${socket.id} has ${
-                        enabled ? "enabled" : "disabled"
-                    } ${track}`
-                );
-
                 rooms[roomId].users.find((user) => user.socket === socket.id)[
                     track
                 ] = enabled;
@@ -199,7 +178,6 @@ io.on("connection", (socket) => {
             });
 
             socket.on("lock-room", (roomId, lock = undefined) => {
-                console.log(`Lock room request: ${roomId} ${lock}`);
                 if (
                     rooms[roomId] &&
                     (rooms[roomId].owner === undefined ||
@@ -212,8 +190,6 @@ io.on("connection", (socket) => {
                     } else {
                         rooms[roomId].locked = lock === true ? true : false;
                     }
-
-                    console.log(`Lock request done`);
                 } else if (rooms[roomId].owner !== socket.id) {
                     console.log(
                         `Clown trying to lock room: ${roomId} ${socket.id}`
@@ -223,8 +199,6 @@ io.on("connection", (socket) => {
             });
 
             socket.on("knock-response", (socketId) => {
-                console.log(`Allowed to enter (socketId): ${socketId}`);
-
                 let pass = uuidv4();
 
                 io.to(socketId).emit("allowed-to-enter", true, pass);
@@ -236,17 +210,12 @@ io.on("connection", (socket) => {
             });
 
             socket.on("message", (msg) => {
-                console.log(`Received Message: ${msg} from room: ${roomId}`);
                 io.to(roomId).emit("received-message", {
                     sender: socket.id,
                     date: new Date(),
                     content: msg,
                 });
             });
-
-            // if (rooms[roomId]) rooms[roomId].locked = true;
-
-            // console.log(rooms);
         }
     );
 });

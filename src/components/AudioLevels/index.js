@@ -41,17 +41,18 @@ function AudioLevels({ muted, mediaStream, className, ...props }) {
     const audioBarsRefs = [useRef(null), useRef(null), useRef(null)];
 
     useEffect(() => {
-        let _return =
-            mediaStream &&
-            mediaStream.getAudioTracks().length > 0 &&
-            computeAudioLevel(mediaStream, audioBarsRefs);
+        let removeListener;
+
+        if (!muted && mediaStream && mediaStream.getAudioTracks().length > 0) {
+            removeListener = computeAudioLevel(mediaStream, audioBarsRefs);
+        }
 
         return () => {
-            _return();
+            removeListener && removeListener();
         };
 
         // eslint-disable-next-line
-    }, [mediaStream]);
+    }, [mediaStream, muted]);
 
     return (
         <Container className={[className, "audio_level"].join(" ")} {...props}>

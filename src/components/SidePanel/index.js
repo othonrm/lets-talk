@@ -14,7 +14,7 @@ import {
 import { darkmodeEnabled, darktheme, Flex } from "../../helpers/styles";
 import Button from "../Button";
 import { lighten } from "polished";
-import { setFocus } from "../../helpers";
+import { getInitals, setFocus } from "../../helpers";
 
 const Container = styled.div`
     width: 350px;
@@ -26,7 +26,7 @@ const Container = styled.div`
     margin-right: -350px;
     display: flex;
     flex-direction: column;
-    z-index: 2;
+    z-index: 100;
     box-shadow: -3px -1px 6px rgba(0, 0, 0, 0.16);
     overflow: hidden;
 
@@ -129,11 +129,11 @@ const MessageInput = styled.input`
     color: ${darktheme.fontdark};
 `;
 
-function SidePanel() {
+function SidePanel({ roomMembers, setRoomMembers, ...props }) {
     const chatListRef = useRef(null);
 
     const [socket, setSocket] = useState(window.socket);
-    const [roomMembers, setRoomMembers] = useState([]);
+
     const [messages, setMessages] = useState([]);
     const [active, setActive] = useState(false);
     const [tab, setTab] = useState("members");
@@ -145,7 +145,6 @@ function SidePanel() {
                 setTimeout(checkSocket, 0);
             } else {
                 window.socket.on("room-members", (_roomMembers) => {
-                    console.log("Room members: ", _roomMembers);
                     setRoomMembers(_roomMembers);
                 });
 
@@ -195,13 +194,11 @@ function SidePanel() {
 
     useEffect(() => {
         let focused_elements = document.querySelectorAll(
-            "#video_grid > .video_container"
+            `#video_grid > .video_container:not([style*="display: none"])`
         );
         let video_containers = document.querySelectorAll(
             ".video_container:not(.screen)"
         );
-
-        console.log(video_containers);
 
         roomMembers &&
             roomMembers.forEach((member) => {
@@ -209,7 +206,6 @@ function SidePanel() {
                     let tries = 10;
 
                     const waitForUserScreen = () => {
-                        console.log("waiting for user screen");
                         tries--;
 
                         if (tries < 0) return;
@@ -291,8 +287,6 @@ function SidePanel() {
 
         setInputMessage("");
 
-        console.log("sending message: " + message);
-
         socket.emit("message", message);
     };
 
@@ -302,7 +296,9 @@ function SidePanel() {
                 <Flex width="100%" margin="12px 0 0 0">
                     <Button
                         outlined={tab !== "members"}
-                        color={tab !== "members" && darktheme.fontdark}
+                        color={
+                            tab !== "members" ? darktheme.fontdark : undefined
+                        }
                         padding="8px 0px"
                         width="100px"
                         margin="0 30px 0 0"
@@ -312,7 +308,7 @@ function SidePanel() {
                     </Button>
                     <Button
                         outlined={tab !== "chat"}
-                        color={tab !== "chat" && darktheme.fontdark}
+                        color={tab !== "chat" ? darktheme.fontdark : undefined}
                         padding="8px 0px"
                         width="100px"
                         margin="0"
@@ -517,7 +513,11 @@ function SidePanel() {
                                 padding="4px 12px"
                                 link
                                 onClick={handleSendMessage}
-                                color={darkmodeEnabled && darktheme.fontdark}
+                                color={
+                                    darkmodeEnabled
+                                        ? darktheme.fontdark
+                                        : undefined
+                                }
                             >
                                 Enviar
                             </Button>
@@ -530,20 +530,3 @@ function SidePanel() {
 }
 
 export default SidePanel;
-
-const getInitals = (name) => {
-    let firstInitial = "G";
-    let secondInitial = "";
-
-    name = name.trim().split(" ");
-
-    if (name.length > 0) {
-        firstInitial = name[0][0];
-
-        if (name.length > 1) {
-            secondInitial = name[1][0];
-        }
-    }
-
-    return firstInitial + secondInitial;
-};

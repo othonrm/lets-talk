@@ -82,8 +82,6 @@ function ConfigModal() {
     };
 
     const handleTestCurrentOutputDevice = async () => {
-        console.log(values.audiooutput);
-
         const audioEnterRoom = new Audio(enter_room);
         if (values.audiooutput)
             await audioEnterRoom.setSinkId(values.audiooutput);
@@ -168,7 +166,9 @@ function ConfigModal() {
                                     margin="0"
                                     onClick={handleTestCurrentOutputDevice}
                                     color={
-                                        darkmodeEnabled && darktheme.fontdark
+                                        darkmodeEnabled
+                                            ? darktheme.fontdark
+                                            : undefined
                                     }
                                 />
                             }

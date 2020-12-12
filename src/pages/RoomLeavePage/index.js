@@ -29,7 +29,7 @@ function RoomLeavePage() {
                     outlined
                     margin="0 16px 0 0"
                     onClick={() => history.push(`/${room_id}`)}
-                    color={darkmodeEnabled && darktheme.fontdark}
+                    color={darkmodeEnabled ? darktheme.fontdark : undefined}
                 >
                     Voltar ao papo
                 </Button>

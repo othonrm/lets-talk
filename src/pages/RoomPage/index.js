@@ -12,6 +12,8 @@ import ConfigModal from "../../components/ConfigModal";
 import { default as Rounded } from "../../components/RoundedButton";
 
 import logo from "../../assets/images/letstalk-logo.png";
+import VideoContainer from "../../components/VideoContainer";
+import VideoControls from "../../components/VideoControls";
 
 const Logo = styled.img.attrs(() => ({
     src: logo,
@@ -75,53 +77,6 @@ const VideoGrid = styled(Flex).attrs(() => ({
         @media screen and (max-width: 760px) {
             padding-right: 30px;
             padding-bottom: 210px;
-        }
-    }
-
-    .video_container {
-        position: relative;
-        margin: auto;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        max-height: 60vw;
-        max-width: 60vw;
-        border-radius: 10px;
-        box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.36);
-        cursor: pointer;
-        background-color: #111;
-
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            border: none;
-            background-color: transparent;
-            margin: 0px;
-            box-sizing: border-box;
-        }
-
-        .user_id {
-            display: none;
-            pointer-events: none;
-        }
-
-        .user_name {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: absolute;
-            bottom: 0px;
-            margin: 10px;
-            left: 0px;
-            background-color: rgb(0 0 0 / 58%);
-            color: #fff;
-            padding: 6px;
-            text-transform: capitalize;
-            border-radius: 6px;
-            pointer-events: none;
         }
     }
 `;
@@ -195,6 +150,10 @@ const RoundedButton = styled(Rounded)`
 
 function RoomPage() {
     const [ready, setReady] = useState(false);
+    const [connectedUsers, setConnectedUsers] = useState({});
+    const [roomMembers, setRoomMembers] = useState([]);
+    const [currentUserStream, setCurrentUserStream] = useState(undefined);
+    const [myId, setMyId] = useState(undefined);
 
     const handleLeaveRoom = () => {
         // setReady(false);
@@ -224,12 +183,66 @@ function RoomPage() {
                                 >
                                     <FaCog />
                                 </RoundedButton>
+
+                                {currentUserStream && myId && (
+                                    <VideoContainer
+                                        me
+                                        user={roomMembers.find(
+                                            (member) => member.id === myId
+                                        )}
+                                        mediaStream={currentUserStream}
+                                    />
+                                )}
+
+                                {connectedUsers &&
+                                    Object.values(connectedUsers).map(
+                                        (user) => {
+                                            if (!user) return null;
+
+                                            const currentRoomMember = roomMembers.find(
+                                                (member) =>
+                                                    member.id === user.peer
+                                            );
+                                            return (
+                                                currentRoomMember && (
+                                                    <VideoContainer
+                                                        key={user.peer}
+                                                        user={currentRoomMember}
+                                                        mediaStream={
+                                                            user.remoteStream
+                                                        }
+                                                    />
+                                                )
+                                            );
+                                        }
+                                    )}
                             </VideoGrid>
 
-                            <SidePanel />
+                            <SidePanel
+                                roomMembers={roomMembers}
+                                setRoomMembers={setRoomMembers}
+                            />
                         </Flex>
 
-                        <Connection handleLeaveRoom={handleLeaveRoom} />
+                        <VideoControls
+                            user={roomMembers.find(
+                                (member) => member.id === myId
+                            )}
+                            currentUserStream={currentUserStream}
+                            setCurrentUserStream={setCurrentUserStream}
+                            handleLeaveRoom={handleLeaveRoom}
+                            connectedUsers={connectedUsers}
+                        />
+
+                        <Connection
+                            myId={myId}
+                            setMyId={setMyId}
+                            currentUserStream={currentUserStream}
+                            setCurrentUserStream={setCurrentUserStream}
+                            connectedUsers={connectedUsers}
+                            setConnectedUsers={setConnectedUsers}
+                            handleLeaveRoom={handleLeaveRoom}
+                        />
                     </Container>
                 </>
             ) : (
