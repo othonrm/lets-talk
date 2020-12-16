@@ -1,35 +1,35 @@
-import { useEffect, useState } from "react";
-import io from "socket.io-client";
-import Peer from "peerjs";
-import { useParams } from "react-router";
+import { useEffect, useState } from 'react';
+import io from 'socket.io-client';
+import Peer from 'peerjs';
+import { useParams } from 'react-router';
 
 import {
     dummyAudioTrack,
     dummyVideoTrack,
     replaceSenderTrack,
     useForceUpdate,
-} from "../helpers";
+} from '../helpers';
 
-import enter_room from "../assets/audios/enter_room.mp3";
-import leave_room from "../assets/audios/leave_room.mp3";
+import enter_room from '../assets/audios/enter_room.mp3';
+import leave_room from '../assets/audios/leave_room.mp3';
 
-import new_message from "../assets/audios/new_message.mp3";
+import new_message from '../assets/audios/new_message.mp3';
 
 let socket;
 let peer;
 
 const connectSocketNPeer = (callback) => {
     socket = io(
-        process.env.NODE_ENV === "development" ? "localhost:8080" : "/"
+        process.env.NODE_ENV === 'development' ? 'localhost:8080' : '/'
     );
 
     window.socket = socket;
 
     peer = new Peer(undefined, {
-        path: "/peerjs",
-        host: "/",
-        secure: process.env.NODE_ENV === "development" ? false : true,
-        port: process.env.NODE_ENV === "development" ? 8080 : 443,
+        path: '/peerjs',
+        host: '/',
+        secure: process.env.NODE_ENV === 'development' ? false : true,
+        port: process.env.NODE_ENV === 'development' ? 8080 : 443,
     });
 
     callback && callback();
@@ -53,20 +53,20 @@ function Connection({
     window.forceUpdate = forceUpdate;
 
     const currentUserName =
-        localStorage.getItem("user_name") !== null &&
-        localStorage.getItem("user_name") !== undefined &&
-        localStorage.getItem("user_name") !== ""
-            ? localStorage.getItem("user_name")
-            : "Guest";
+        localStorage.getItem('user_name') !== null &&
+        localStorage.getItem('user_name') !== undefined &&
+        localStorage.getItem('user_name') !== ''
+            ? localStorage.getItem('user_name')
+            : 'Guest';
 
     const [startedMedia, setStartedMedia] = useState(undefined);
     const [connected, setConnected] = useState(socket && socket.connected);
     const [screenSharing, setScreenSharing] = useState(false);
     const [currentDisplayStream, setCurrentDisplayStream] = useState(undefined);
-    const audioEnabled = localStorage.getItem("audio_enabled") !== "false";
-    const videoEnabled = localStorage.getItem("video_enabled") !== "false";
+    const audioEnabled = localStorage.getItem('audio_enabled') !== 'false';
+    const videoEnabled = localStorage.getItem('video_enabled') !== 'false';
 
-    const audiooutput = localStorage.getItem("audiooutput_device");
+    const audiooutput = localStorage.getItem('audiooutput_device');
     const audioEnterRoom = new Audio(enter_room);
     const audioLeaveRoom = new Audio(leave_room);
 
@@ -78,7 +78,7 @@ function Connection({
     if (
         audiooutput !== undefined &&
         audiooutput !== null &&
-        audiooutput !== ""
+        audiooutput !== ''
     ) {
         audioEnterRoom.setSinkId(audiooutput);
         audioLeaveRoom.setSinkId(audiooutput);
@@ -105,8 +105,8 @@ function Connection({
     }, [currentUserStream]);
 
     useEffect(() => {
-        let audioinput = localStorage.getItem("audioinput_device") || undefined;
-        let videoinput = localStorage.getItem("videoinput_device") || undefined;
+        let audioinput = localStorage.getItem('audioinput_device') || undefined;
+        let videoinput = localStorage.getItem('videoinput_device') || undefined;
 
         let constraints = {
             video: videoinput ? { deviceId: videoinput } : true, //!videoDisabled,
@@ -134,14 +134,14 @@ function Connection({
                     }
 
                     let screenTrack = dummyVideoTrack();
-                    screenTrack.kind2 = "screen";
+                    screenTrack.kind2 = 'screen';
                     screenTrack.stop();
                     media_stream.addTrack(screenTrack);
 
                     setCurrentUserStream(media_stream);
                 })
                 .catch((reason) =>
-                    console.error("Cannot get video because: ", reason)
+                    console.error('Cannot get video because: ', reason)
                 );
 
             setStartedMedia(true);
@@ -152,9 +152,9 @@ function Connection({
 
     useEffect(() => {
         if ((screenSharing, currentDisplayStream)) {
-            socket.removeAllListeners("user-connected");
+            socket.removeAllListeners('user-connected');
 
-            socket.on("user-connected", (userId, userName) => {
+            socket.on('user-connected', (userId, userName) => {
                 if (screenSharing) {
                     connectToNewUser(
                         currentDisplayStream,
@@ -198,15 +198,15 @@ function Connection({
     };
 
     const setSocketEvents = () => {
-        socket.on("connect", () => {
+        socket.on('connect', () => {
             setConnected(socket.connected);
         });
 
-        socket.on("disconnect", (reason) => {
+        socket.on('disconnect', (reason) => {
             leaveRoom();
         });
 
-        socket.on("user-connected", (userId, userName) => {
+        socket.on('user-connected', (userId, userName) => {
             const checkMyStream = () => {
                 if (!currentUserStream) {
                     setTimeout(checkMyStream, 100);
@@ -223,27 +223,27 @@ function Connection({
             checkMyStream();
         });
 
-        socket.on("user-disconnected", (userId) => {
+        socket.on('user-disconnected', (userId) => {
             if (window.connectedUsers[userId])
                 window.connectedUsers[userId].close();
         });
 
-        socket.on("invaded-not-allowed", () => {
-            console.log("YOU SHALL NOT PASS");
+        socket.on('invaded-not-allowed', () => {
+            console.log('YOU SHALL NOT PASS');
             window.location.reload();
         });
     };
 
     const setPeerEvents = () => {
-        peer.on("open", (peer_id) => {
+        peer.on('open', (peer_id) => {
             setMyId(peer_id);
 
             socket.emit(
-                "join-room",
+                'join-room',
                 room_id,
                 peer_id,
                 currentUserName,
-                localStorage.getItem("locked_room_pass"),
+                localStorage.getItem('locked_room_pass'),
                 currentUserStream.getVideoTracks()[0]
                     ? currentUserStream.getVideoTracks()[0].enabled
                     : false,
@@ -251,7 +251,7 @@ function Connection({
             );
         });
 
-        peer.on("call", (call) => {
+        peer.on('call', (call) => {
             const checkMyStream = () => {
                 if (!currentUserStream) {
                     setTimeout(checkMyStream, 100);
@@ -306,9 +306,9 @@ function Connection({
             currentUserStream.getVideoTracks()[1].stop();
         }
 
-        socket.emit("toggle-track", "screen", false);
+        socket.emit('toggle-track', 'screen', false);
 
-        replaceSenderTrack(peerConnections, currentUserStream, "screen");
+        replaceSenderTrack(peerConnections, currentUserStream, 'screen');
     };
 
     window.stopScreenShare = stopScreenShare;
@@ -342,7 +342,7 @@ function Connection({
                 display_stream.addTrack(
                     currentUserStream
                         .getVideoTracks()
-                        .find((item) => item.kind === "video")
+                        .find((item) => item.kind === 'video')
                 );
 
                 let newStream = new MediaStream([
@@ -353,21 +353,21 @@ function Connection({
 
                 setCurrentUserStream(newStream);
 
-                socket.emit("toggle-track", "screen", true);
+                socket.emit('toggle-track', 'screen', true);
 
                 setScreenSharing(true);
 
-                replaceSenderTrack(peerConnections, newStream, "screen");
+                replaceSenderTrack(peerConnections, newStream, 'screen');
             })
             .catch((reason) =>
-                console.error("Cannot get display because: ", reason)
+                console.error('Cannot get display because: ', reason)
             );
     };
 
     window.screenShare = screenShare;
 
     const sendMessage = (msg) => {
-        socket.emit("message", msg);
+        socket.emit('message', msg);
     };
 
     window.sendMessage = sendMessage;
@@ -377,7 +377,7 @@ function Connection({
             metadata: { username: myUserName },
         });
 
-        call.on("stream", function (callStream) {
+        call.on('stream', function (callStream) {
             if (window.connectedUsers[userId]) return;
 
             setConnectedUsers({
@@ -388,7 +388,7 @@ function Connection({
             // window.forceUpdate && window.forceUpdate();
         });
 
-        call.on("close", () => {
+        call.on('close', () => {
             setConnectedUsers({
                 ...window.connectedUsers,
                 [call.peer]: undefined,
@@ -401,7 +401,7 @@ function Connection({
 
         call.answer(stream);
 
-        call.on("stream", function (callStream) {
+        call.on('stream', function (callStream) {
             if (window.connectedUsers[call.peer]) return;
 
             setConnectedUsers({
@@ -410,14 +410,14 @@ function Connection({
             });
         });
 
-        call.on("disconnected", () => {
+        call.on('disconnected', () => {
             setConnectedUsers({
                 ...window.connectedUsers,
                 [call.peer]: undefined,
             });
         });
 
-        call.on("close", () => {
+        call.on('close', () => {
             setConnectedUsers({
                 ...window.connectedUsers,
                 [call.peer]: undefined,

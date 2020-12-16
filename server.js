@@ -1,88 +1,77 @@
-const express = require("express");
-// const favicon = require("express-favicon");
-const path = require("path");
-const app = express();
-const port = process.env.PORT || 8080;
-const { v4: uuidv4 } = require("uuid");
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
 
-const server = require("http").Server(app);
-const io = require("socket.io")(server, {
+const { ExpressPeerServer } = require('peer');
+const { v4: uuidv4 } = require('uuid');
+const routes = require('./server/routes');
+
+const app = express();
+const server = require('http').Server(app);
+
+const port = process.env.PORT || 8080;
+
+const io = require('socket.io')(server, {
     cors: {
         origin:
-            process.env.NODE_ENV !== "production"
-                ? "*"
-                : "https://www.lets-talk.dev.br",
+            process.env.NODE_ENV !== 'production'
+                ? '*'
+                : 'https://www.lets-talk.dev.br',
     },
 });
-const { ExpressPeerServer } = require("peer");
-
 const peerServer = ExpressPeerServer(server, {
     debug: true,
 });
 
+app.use(cors());
+
 app.use((req, res, next) => {
     const allowedOrigins =
-        process.env.NODE_ENV !== "production"
+        process.env.NODE_ENV !== 'production'
             ? [
-                  "http://127.0.0.1:3000",
-                  "http://localhost:8080",
-                  "http://127.0.0.1:8080",
-                  "http://localhost:3000",
+                  'http://127.0.0.1:3000',
+                  'http://localhost:8080',
+                  'http://127.0.0.1:8080',
+                  'http://localhost:3000',
               ]
-            : ["https://www.lets-talk.dev.br"];
+            : ['https://www.lets-talk.dev.br'];
     const origin = req.headers.origin;
 
     if (allowedOrigins.includes(origin)) {
-        res.setHeader("Access-Control-Allow-Origin", origin);
+        res.setHeader('Access-Control-Allow-Origin', origin);
     }
-    res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    res.header("Access-Control-Allow-Credentials", true);
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Allow-Credentials', true);
     return next();
 });
 
 // app.use(favicon(__dirname + "/build/favicon.ico"));
 
-app.use("/peerjs", peerServer);
+app.use(routes);
+
+app.use('/peerjs', peerServer);
 
 app.use(express.static(__dirname));
-app.use(express.static(path.join(__dirname, "build")));
+app.use(express.static(path.join(__dirname, 'build')));
 
-app.get("/ping", function (req, res) {
-    return res.send("pong");
+app.get('/*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
-// app.use(function (req, res, next) {
-//     if (req.secure || process.env.NODE_ENV !== "production") {
-//         // request was via https, so do no special handling
-//         next();
-//     } else {
-//         // request was via http, so redirect to https
-//         res.redirect("https://" + req.headers.host + req.url);
-//     }
-// });
-
-app.get("/api/v1/rooms", function (req, res) {
-    res.json(rooms);
-});
-
-app.get("/*", function (req, res) {
-    res.sendFile(path.join(__dirname, "build", "index.html"));
-});
-
-let rooms = {
-    "sala-premium": { owner: "othon", locked: true, users: [] },
+global.rooms = {
+    'sala-premium': { owner: 'othon', locked: true, users: [] },
 };
 
-let allowed_users = {};
+let allowedUsers = {};
 
-io.on("connection", (socket) => {
-    socket.on("knock-room", (roomId, userName) => {
+io.on('connection', (socket) => {
+    socket.on('knock-room', (roomId, userName) => {
         if (!rooms[roomId] || rooms[roomId].locked !== true) {
-            io.to(socket.id).emit("allowed-to-enter", true);
+            io.to(socket.id).emit('allowed-to-enter', true);
         } else {
             io.to(rooms[roomId].owner).emit(
-                "knock-request",
+                'knock-request',
                 roomId,
                 userName,
                 socket.id
@@ -91,7 +80,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on(
-        "join-room",
+        'join-room',
         (roomId, userId, userName, pass, video = true, audio = true) => {
             rooms[roomId] = {
                 ...(rooms[roomId] || {}),
@@ -114,7 +103,7 @@ io.on("connection", (socket) => {
                 (!allowed_users[roomId] ||
                     !allowed_users[roomId].find((item) => item === pass))
             ) {
-                io.to(socket.id).emit("invaded-not-allowed");
+                io.to(socket.id).emit('invaded-not-allowed');
 
                 return;
             } else if (
@@ -131,16 +120,16 @@ io.on("connection", (socket) => {
 
             socket
                 .to(roomId)
-                .broadcast.emit("user-connected", userId, userName);
+                .broadcast.emit('user-connected', userId, userName);
 
-            io.to(roomId).emit("room-members", rooms[roomId].users);
+            io.to(roomId).emit('room-members', rooms[roomId].users);
 
             if (rooms[roomId] && rooms[roomId].owner === socket.id) {
-                io.to(roomId).emit("room-owner", socket.id);
+                io.to(roomId).emit('room-owner', socket.id);
             }
 
-            socket.on("disconnect", () => {
-                socket.to(roomId).broadcast.emit("user-disconnected", userId);
+            socket.on('disconnect', () => {
+                socket.to(roomId).broadcast.emit('user-disconnected', userId);
 
                 if (rooms[roomId]) {
                     rooms[roomId] = {
@@ -158,7 +147,7 @@ io.on("connection", (socket) => {
                         if (rooms[roomId].owner === socket.id) {
                             rooms[roomId].owner = rooms[roomId].users[0].socket;
                             io.to(roomId).emit(
-                                "room-owner",
+                                'room-owner',
                                 rooms[roomId].users[0].socket
                             );
                         }
@@ -166,18 +155,18 @@ io.on("connection", (socket) => {
                 }
 
                 rooms[roomId] &&
-                    io.to(roomId).emit("room-members", rooms[roomId].users);
+                    io.to(roomId).emit('room-members', rooms[roomId].users);
             });
 
-            socket.on("toggle-track", (track, enabled) => {
+            socket.on('toggle-track', (track, enabled) => {
                 rooms[roomId].users.find((user) => user.socket === socket.id)[
                     track
                 ] = enabled;
 
-                io.to(roomId).emit("room-members", rooms[roomId].users);
+                io.to(roomId).emit('room-members', rooms[roomId].users);
             });
 
-            socket.on("lock-room", (roomId, lock = undefined) => {
+            socket.on('lock-room', (roomId, lock = undefined) => {
                 if (
                     rooms[roomId] &&
                     (rooms[roomId].owner === undefined ||
@@ -195,13 +184,13 @@ io.on("connection", (socket) => {
                         `Clown trying to lock room: ${roomId} ${socket.id}`
                     );
                 }
-                io.to(roomId).emit("room-lock", rooms[roomId].locked);
+                io.to(roomId).emit('room-lock', rooms[roomId].locked);
             });
 
-            socket.on("knock-response", (socketId) => {
+            socket.on('knock-response', (socketId) => {
                 let pass = uuidv4();
 
-                io.to(socketId).emit("allowed-to-enter", true, pass);
+                io.to(socketId).emit('allowed-to-enter', true, pass);
 
                 allowed_users[roomId] = [
                     ...(allowed_users[roomId] || []),
@@ -209,8 +198,8 @@ io.on("connection", (socket) => {
                 ];
             });
 
-            socket.on("message", (msg) => {
-                io.to(roomId).emit("received-message", {
+            socket.on('message', (msg) => {
+                io.to(roomId).emit('received-message', {
                     sender: socket.id,
                     date: new Date(),
                     content: msg,
