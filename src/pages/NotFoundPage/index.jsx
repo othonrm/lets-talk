@@ -1,12 +1,12 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React from 'react';
+import { Link } from 'react-router-dom';
+import styled from 'styled-components';
+import { lighten } from 'polished';
 
-import { darktheme, Flex } from "../../helpers/styles";
+import { darktheme, Flex } from '../../helpers/styles';
 
-import Logo from "../../components/Logo";
-import Button from "../../components/Button";
-import styled from "styled-components";
-import { lighten } from "polished";
+import Logo from '../../components/Logo';
+import Button from '../../components/Button';
 
 const Title = styled.h2`
     color: ${lighten(-0.1, darktheme.fontdark)};

@@ -1,20 +1,23 @@
-import React, { useEffect, useRef, useState } from "react";
-import styled, { css } from "styled-components";
+/* eslint-disable indent */
+import React, { useEffect, useRef, useState } from 'react';
+import PropTypes from 'prop-types';
 
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import styled, { css } from 'styled-components';
+
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 import {
     FaMicrophoneAlt,
     FaMicrophoneAltSlash,
     FaVideo,
     FaVideoSlash,
-} from "react-icons/fa";
+} from 'react-icons/fa';
 
-import { darkmodeEnabled, darktheme, Flex } from "../../helpers/styles";
-import Button from "../Button";
-import { lighten } from "polished";
-import { getInitals, setFocus } from "../../helpers";
+import { darkmodeEnabled, darktheme, Flex } from '../../helpers/styles';
+import Button from '../Button';
+import { lighten } from 'polished';
+import { getInitals, setFocus } from '../../helpers';
 
 const Container = styled.div`
     width: 350px;
@@ -30,7 +33,7 @@ const Container = styled.div`
     box-shadow: -3px -1px 6px rgba(0, 0, 0, 0.16);
     overflow: hidden;
 
-    ${(props) =>
+    ${props =>
         props.active &&
         css`
             margin-right: 0px;
@@ -89,7 +92,7 @@ const MessageContainer = styled.div`
     border-radius: 0px 10px 10px 10px;
     box-sizing: border-box;
 
-    ${(props) =>
+    ${props =>
         props.me &&
         css`
             border-radius: 10px 0px 10px 10px;
@@ -109,7 +112,7 @@ const InputContainer = styled(Flex)`
         ${lighten(darkmodeEnabled ? -0.1 : -0.15, darktheme.primary)};
     background-color: ${lighten(
         darkmodeEnabled ? -0.05 : -0.1,
-        darktheme.primary
+        darktheme.primary,
     )};
     height: auto;
     padding: 8px 16px;
@@ -129,29 +132,29 @@ const MessageInput = styled.input`
     color: ${darktheme.fontdark};
 `;
 
-function SidePanel({ roomMembers, setRoomMembers, ...props }) {
+function SidePanel({ roomMembers, setRoomMembers }) {
     const chatListRef = useRef(null);
 
     const [socket, setSocket] = useState(window.socket);
 
     const [messages, setMessages] = useState([]);
     const [active, setActive] = useState(false);
-    const [tab, setTab] = useState("members");
-    const [inputMessage, setInputMessage] = useState("");
+    const [tab, setTab] = useState('members');
+    const [inputMessage, setInputMessage] = useState('');
 
     useEffect(() => {
         const checkSocket = () => {
             if (window.socket === undefined) {
                 setTimeout(checkSocket, 0);
             } else {
-                window.socket.on("room-members", (_roomMembers) => {
+                window.socket.on('room-members', _roomMembers => {
                     setRoomMembers(_roomMembers);
                 });
 
-                window.socket.on("received-message", (msg) => {
+                window.socket.on('received-message', msg => {
                     setMessages([...messages, msg]);
 
-                    typeof window.onReceivedMessage === "function" &&
+                    typeof window.onReceivedMessage === 'function' &&
                         window.onReceivedMessage();
                 });
 
@@ -177,31 +180,32 @@ function SidePanel({ roomMembers, setRoomMembers, ...props }) {
 
     useEffect(() => {
         window.socket &&
-            window.socket.on("received-message", (msg) => {
+            window.socket.on('received-message', msg => {
                 setMessages([...messages, msg]);
 
-                typeof window.onReceivedMessage === "function" &&
+                typeof window.onReceivedMessage === 'function' &&
                     window.onReceivedMessage();
             });
 
         return () => {
             window.socket &&
-                window.socket.removeAllListeners("received-message");
+                window.socket.removeAllListeners('received-message');
         };
 
         // eslint-disable-next-line
     }, [socket, messages]);
 
     useEffect(() => {
-        let focused_elements = document.querySelectorAll(
-            `#video_grid > .video_container:not([style*="display: none"])`
+        let focusedElements = document.querySelectorAll(
+            `#video_grid > .video_container:not([style*="display: none"])`,
         );
-        let video_containers = document.querySelectorAll(
-            ".video_container:not(.screen)"
+
+        let videoContainers = document.querySelectorAll(
+            '.video_container:not(.screen)',
         );
 
         roomMembers &&
-            roomMembers.forEach((member) => {
+            roomMembers.forEach(member => {
                 if (member.screen === true) {
                     let tries = 10;
 
@@ -210,16 +214,16 @@ function SidePanel({ roomMembers, setRoomMembers, ...props }) {
 
                         if (tries < 0) return;
 
-                        const member_screen = document.getElementById(
-                            `${member.id}_screen`
+                        const memberScreen = document.getElementById(
+                            `${member.id}_screen`,
                         );
 
-                        if (!member_screen) {
+                        if (!memberScreen) {
                             setTimeout(waitForUserScreen, 500);
                         } else {
-                            member_screen.style.display = "";
+                            memberScreen.style.display = '';
 
-                            if (focused_elements.length > 1) {
+                            if (focusedElements.length > 1) {
                                 setFocus(`${member.id}_screen`);
                             }
                         }
@@ -227,16 +231,16 @@ function SidePanel({ roomMembers, setRoomMembers, ...props }) {
 
                     waitForUserScreen();
                 } else {
-                    const member_screen = document.getElementById(
-                        `${member.id}_screen`
+                    const memberScreen = document.getElementById(
+                        `${member.id}_screen`,
                     );
-                    if (member_screen) member_screen.style.display = "none";
+                    if (memberScreen) memberScreen.style.display = 'none';
                 }
             });
 
-        if (focused_elements.length === 0 && video_containers.length > 0) {
+        if (focusedElements.length === 0 && videoContainers.length > 0) {
             let sharingScreenUser = roomMembers.find(
-                (item) => item.screen === true
+                item => item.screen === true,
             );
 
             if (
@@ -245,7 +249,7 @@ function SidePanel({ roomMembers, setRoomMembers, ...props }) {
             ) {
                 setFocus(`${sharingScreenUser.id}_screen`);
             } else {
-                setFocus(video_containers[0].id);
+                setFocus(videoContainers[0].id);
             }
         }
 
@@ -262,21 +266,21 @@ function SidePanel({ roomMembers, setRoomMembers, ...props }) {
 
         setActive(window.sidePanelActive);
 
-        typeof window.onToggleSidePanel === "function" &&
+        typeof window.onToggleSidePanel === 'function' &&
             window.onToggleSidePanel();
     };
 
     window.toggleSidePanel = toggleSidePanel;
 
     const showMembersTab = () => {
-        setTab("members");
+        setTab('members');
     };
 
     const showChatTab = () => {
-        setTab("chat");
+        setTab('chat');
     };
 
-    const handleSendMessage = (e) => {
+    const handleSendMessage = e => {
         e && e.preventDefault && e.preventDefault();
 
         let message = inputMessage;
@@ -285,9 +289,63 @@ function SidePanel({ roomMembers, setRoomMembers, ...props }) {
 
         if (message.length === 0) return;
 
-        setInputMessage("");
+        setInputMessage('');
 
-        socket.emit("message", message);
+        socket.emit('message', message);
+    };
+
+    const renderMessageTime = (lastMessage, actualMessage) => {
+        if (
+            !lastMessage ||
+            format(new Date(lastMessage.date), 'HH:mm', {
+                locale: ptBR,
+            }) !==
+                format(new Date(actualMessage.date), 'HH:mm', {
+                    locale: ptBR,
+                }) ||
+            lastMessage.sender !== actualMessage.sender
+        ) {
+            return (
+                <Flex
+                    width="100%"
+                    justifyContent="center"
+                    as="small"
+                    margin="0 0 0px 0"
+                    color={darktheme.fontdark}
+                >
+                    {format(new Date(actualMessage.date), 'HH:mm', {
+                        locale: ptBR,
+                    })}
+                </Flex>
+            );
+        }
+    };
+
+    const renderMessageUserName = (lastMessage, actualMessage) => {
+        if (!lastMessage || lastMessage.sender !== actualMessage.sender) {
+            return (
+                <Flex
+                    width="100%"
+                    justifyContent={
+                        actualMessage.sender === socket.id
+                            ? 'flex-end'
+                            : 'flex-start'
+                    }
+                    as="small"
+                    margin="0 0 6px 0"
+                >
+                    <p>
+                        {roomMembers.find(
+                            item => item.socket === actualMessage.sender,
+                        )
+                            ? roomMembers.find(
+                                  item => item.socket === actualMessage.sender,
+                              ).name
+                            : 'Convidado'}
+                    </p>
+                </Flex>
+            );
+        }
     };
 
     return !socket ? null : (
@@ -295,9 +353,9 @@ function SidePanel({ roomMembers, setRoomMembers, ...props }) {
             <Container active={active}>
                 <Flex width="100%" margin="12px 0 0 0">
                     <Button
-                        outlined={tab !== "members"}
+                        outlined={tab !== 'members'}
                         color={
-                            tab !== "members" ? darktheme.fontdark : undefined
+                            tab !== 'members' ? darktheme.fontdark : undefined
                         }
                         padding="8px 0px"
                         width="100px"
@@ -307,8 +365,8 @@ function SidePanel({ roomMembers, setRoomMembers, ...props }) {
                         Membros
                     </Button>
                     <Button
-                        outlined={tab !== "chat"}
-                        color={tab !== "chat" ? darktheme.fontdark : undefined}
+                        outlined={tab !== 'chat'}
+                        color={tab !== 'chat' ? darktheme.fontdark : undefined}
                         padding="8px 0px"
                         width="100px"
                         margin="0"
@@ -317,7 +375,7 @@ function SidePanel({ roomMembers, setRoomMembers, ...props }) {
                         Conversa
                     </Button>
                 </Flex>
-                {tab === "members" && (
+                {tab === 'members' && (
                     <Flex
                         alignItems="flex-start"
                         direction="row"
@@ -345,14 +403,14 @@ function SidePanel({ roomMembers, setRoomMembers, ...props }) {
                             padding="16px 0"
                         >
                             {roomMembers &&
-                                roomMembers.map((user) => (
+                                roomMembers.map(user => (
                                     <UserContainer key={user.id}>
                                         <Avatar>{getInitals(user.name)}</Avatar>
-                                        {user.name}{" "}
-                                        {user.socket === socket.id && "(Você)"}
+                                        {user.name}{' '}
+                                        {user.socket === socket.id && '(Você)'}
                                         <Flex
                                             color={
-                                                user.audio ? "green" : "gray"
+                                                user.audio ? 'green' : 'gray'
                                             }
                                             margin="0 6px 0 auto"
                                         >
@@ -364,7 +422,7 @@ function SidePanel({ roomMembers, setRoomMembers, ...props }) {
                                         </Flex>
                                         <Flex
                                             color={
-                                                user.video ? "green" : "gray"
+                                                user.video ? 'green' : 'gray'
                                             }
                                         >
                                             {user.video ? (
@@ -379,7 +437,7 @@ function SidePanel({ roomMembers, setRoomMembers, ...props }) {
                     </Flex>
                 )}
 
-                {tab === "chat" && (
+                {tab === 'chat' && (
                     <Flex
                         justifyContent="flex-start"
                         direction="column"
@@ -413,75 +471,20 @@ function SidePanel({ roomMembers, setRoomMembers, ...props }) {
                                         direction="column"
                                         alignItems={
                                             message.sender === socket.id
-                                                ? "flex-end"
-                                                : "flex-start"
+                                                ? 'flex-end'
+                                                : 'flex-start'
                                         }
                                         key={index}
                                         color={darktheme.fontdark}
                                     >
-                                        {(!messages[index - 1] ||
-                                            format(
-                                                new Date(
-                                                    messages[index - 1].date
-                                                ),
-                                                "HH:mm",
-                                                {
-                                                    locale: ptBR,
-                                                }
-                                            ) !==
-                                                format(
-                                                    new Date(message.date),
-                                                    "HH:mm",
-                                                    {
-                                                        locale: ptBR,
-                                                    }
-                                                ) ||
-                                            messages[index - 1].sender !==
-                                                message.sender) && (
-                                            <Flex
-                                                width="100%"
-                                                justifyContent="center"
-                                                as="small"
-                                                margin="0 0 0px 0"
-                                                color={darktheme.fontdark}
-                                            >
-                                                {format(
-                                                    new Date(message.date),
-                                                    "HH:mm",
-                                                    {
-                                                        locale: ptBR,
-                                                    }
-                                                )}
-                                            </Flex>
+                                        {renderMessageTime(
+                                            messages[index - 1],
+                                            message,
                                         )}
 
-                                        {(!messages[index - 1] ||
-                                            messages[index - 1].sender !==
-                                                message.sender) && (
-                                            <Flex
-                                                width="100%"
-                                                justifyContent={
-                                                    message.sender === socket.id
-                                                        ? "flex-end"
-                                                        : "flex-start"
-                                                }
-                                                as="small"
-                                                margin="0 0 6px 0"
-                                            >
-                                                <p>
-                                                    {roomMembers.find(
-                                                        (item) =>
-                                                            item.socket ===
-                                                            message.sender
-                                                    )
-                                                        ? roomMembers.find(
-                                                              (item) =>
-                                                                  item.socket ===
-                                                                  message.sender
-                                                          ).name
-                                                        : "Convidado"}
-                                                </p>
-                                            </Flex>
+                                        {renderMessageUserName(
+                                            messages[index - 1],
+                                            message,
                                         )}
                                         <MessageContainer
                                             me={message.sender === socket.id}
@@ -504,9 +507,7 @@ function SidePanel({ roomMembers, setRoomMembers, ...props }) {
                                 name="message"
                                 type="text"
                                 value={inputMessage}
-                                onChange={(e) =>
-                                    setInputMessage(e.target.value)
-                                }
+                                onChange={e => setInputMessage(e.target.value)}
                             />
                             <Button
                                 margin="0 0 0 10px"
@@ -528,5 +529,10 @@ function SidePanel({ roomMembers, setRoomMembers, ...props }) {
         </>
     );
 }
+
+SidePanel.propTypes = {
+    roomMembers: PropTypes.any,
+    setRoomMembers: PropTypes.func,
+};
 
 export default SidePanel;

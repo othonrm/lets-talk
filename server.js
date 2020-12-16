@@ -1,10 +1,10 @@
+/* eslint-disable operator-linebreak */
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
 const { ExpressPeerServer } = require('peer');
 const { v4: uuidv4 } = require('uuid');
-const routes = require('./server/routes');
 
 const app = express();
 const server = require('http').Server(app);
@@ -19,6 +19,9 @@ const io = require('socket.io')(server, {
                 : 'https://www.lets-talk.dev.br',
     },
 });
+
+const routes = require('./server/routes');
+
 const peerServer = ExpressPeerServer(server, {
     debug: true,
 });
@@ -35,7 +38,7 @@ app.use((req, res, next) => {
                   'http://localhost:3000',
               ]
             : ['https://www.lets-talk.dev.br'];
-    const origin = req.headers.origin;
+    const { origin } = req.headers;
 
     if (allowedOrigins.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
@@ -48,7 +51,7 @@ app.use((req, res, next) => {
 
 // app.use(favicon(__dirname + "/build/favicon.ico"));
 
-app.use(routes);
+app.use('/api/v1', routes);
 
 app.use('/peerjs', peerServer);
 
@@ -59,13 +62,15 @@ app.get('/*', (req, res) => {
     res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
-global.rooms = {
+const rooms = {
     'sala-premium': { owner: 'othon', locked: true, users: [] },
 };
 
-let allowedUsers = {};
+global.rooms = rooms;
 
-io.on('connection', (socket) => {
+const allowedUsers = {};
+
+io.on('connection', socket => {
     socket.on('knock-room', (roomId, userName) => {
         if (!rooms[roomId] || rooms[roomId].locked !== true) {
             io.to(socket.id).emit('allowed-to-enter', true);
@@ -74,7 +79,7 @@ io.on('connection', (socket) => {
                 'knock-request',
                 roomId,
                 userName,
-                socket.id
+                socket.id,
             );
         }
     });
@@ -100,19 +105,24 @@ io.on('connection', (socket) => {
 
             if (
                 rooms[roomId].locked &&
-                (!allowed_users[roomId] ||
-                    !allowed_users[roomId].find((item) => item === pass))
+                (!allowedUsers[roomId] ||
+                    !allowedUsers[roomId].find(item => {
+                        return item === pass;
+                    }))
             ) {
                 io.to(socket.id).emit('invaded-not-allowed');
 
                 return;
-            } else if (
+            }
+            if (
                 rooms[roomId].locked &&
-                allowed_users[roomId] &&
-                allowed_users[roomId].find((item) => item === pass)
+                allowedUsers[roomId] &&
+                allowedUsers[roomId].find(item => {
+                    return item === pass;
+                })
             ) {
-                // allowed_users[roomId] = [
-                //     ...allowed_users[roomId].filter((item) => item !== pass),
+                // allowedUsers[roomId] = [
+                //     ...allowedUsers[roomId].filter((item) => item !== pass),
                 // ];
             }
 
@@ -135,22 +145,20 @@ io.on('connection', (socket) => {
                     rooms[roomId] = {
                         ...rooms[roomId],
                         users: [
-                            ...(rooms[roomId].users || []).filter(
-                                (item) => item.id !== userId
-                            ),
+                            ...(rooms[roomId].users || []).filter(item => {
+                                return item.id !== userId;
+                            }),
                         ],
                     };
 
                     if (rooms[roomId].users.length === 0) {
                         delete rooms[roomId];
-                    } else {
-                        if (rooms[roomId].owner === socket.id) {
-                            rooms[roomId].owner = rooms[roomId].users[0].socket;
-                            io.to(roomId).emit(
-                                'room-owner',
-                                rooms[roomId].users[0].socket
-                            );
-                        }
+                    } else if (rooms[roomId].owner === socket.id) {
+                        rooms[roomId].owner = rooms[roomId].users[0].socket;
+                        io.to(roomId).emit(
+                            'room-owner',
+                            rooms[roomId].users[0].socket,
+                        );
                     }
                 }
 
@@ -159,14 +167,14 @@ io.on('connection', (socket) => {
             });
 
             socket.on('toggle-track', (track, enabled) => {
-                rooms[roomId].users.find((user) => user.socket === socket.id)[
-                    track
-                ] = enabled;
+                rooms[roomId].users.find(user => {
+                    return user.socket === socket.id;
+                })[track] = enabled;
 
                 io.to(roomId).emit('room-members', rooms[roomId].users);
             });
 
-            socket.on('lock-room', (roomId, lock = undefined) => {
+            socket.on('lock-room', (lock = undefined) => {
                 if (
                     rooms[roomId] &&
                     (rooms[roomId].owner === undefined ||
@@ -177,35 +185,32 @@ io.on('connection', (socket) => {
                     if (lock === undefined) {
                         rooms[roomId].locked = !rooms[roomId].locked;
                     } else {
-                        rooms[roomId].locked = lock === true ? true : false;
+                        rooms[roomId].locked = lock === true;
                     }
                 } else if (rooms[roomId].owner !== socket.id) {
                     console.log(
-                        `Clown trying to lock room: ${roomId} ${socket.id}`
+                        `Clown trying to lock room: ${roomId} ${socket.id}`,
                     );
                 }
                 io.to(roomId).emit('room-lock', rooms[roomId].locked);
             });
 
-            socket.on('knock-response', (socketId) => {
-                let pass = uuidv4();
+            socket.on('knock-response', socketId => {
+                const pass = uuidv4();
 
                 io.to(socketId).emit('allowed-to-enter', true, pass);
 
-                allowed_users[roomId] = [
-                    ...(allowed_users[roomId] || []),
-                    pass,
-                ];
+                allowedUsers[roomId] = [...(allowedUsers[roomId] || []), pass];
             });
 
-            socket.on('message', (msg) => {
+            socket.on('message', msg => {
                 io.to(roomId).emit('received-message', {
                     sender: socket.id,
                     date: new Date(),
                     content: msg,
                 });
             });
-        }
+        },
     );
 });
 

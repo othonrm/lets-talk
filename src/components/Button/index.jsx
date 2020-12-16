@@ -1,5 +1,6 @@
-import React from "react";
-import styled, { css } from "styled-components";
+import React from 'react';
+import PropTypes from 'prop-types';
+import styled, { css } from 'styled-components';
 
 const Container = styled.button`
     display: flex;
@@ -17,16 +18,16 @@ const Container = styled.button`
 
     text-decoration: none;
     border-radius: 4px;
-    margin: ${(props) => (props.margin ? props.margin : "1rem")};
-    padding: ${(props) => (props.padding ? props.padding : "0.5rem 2rem")};
-    height: ${(props) => props.height && props.height};
-    width: ${(props) => props.width && props.width};
-    min-height: ${(props) => props.minHeight && props.minHeight};
-    min-width: ${(props) => props.minWidth && props.minWidth};
+    margin: ${props => (props.margin ? props.margin : '1rem')};
+    padding: ${props => (props.padding ? props.padding : '0.5rem 2rem')};
+    height: ${props => props.height && props.height};
+    width: ${props => props.width && props.width};
+    min-height: ${props => props.minHeight && props.minHeight};
+    min-width: ${props => props.minWidth && props.minWidth};
     color: #fff;
-    font-size: ${(props) => (props.small ? "14px" : "17px")};
+    font-size: ${props => (props.small ? '14px' : '17px')};
 
-    ${(props) =>
+    ${props =>
         props.outlined &&
         css`
             background: transparent;
@@ -34,7 +35,7 @@ const Container = styled.button`
             color: rgb(55, 38, 176);
         `}
 
-    ${(props) =>
+    ${props =>
         props.link &&
         css`
             background: transparent;
@@ -42,21 +43,30 @@ const Container = styled.button`
             box-shadow: none;
         `}
 
-    ${(props) =>
+    ${props =>
         props.disabled &&
         css`
             pointer-events: none;
             opacity: 0.7;
         `}
 
-    ${(props) => props.color && `color: ${props.color};`}
+    ${props => props.color && `color: ${props.color};`}
 
     & > *:not(:last-child) {
         margin-right: 8px;
     }
 `;
 
-function Button({ value, onClick, link, outlined, disabled, small, ...props }) {
+function Button({
+    value,
+    onClick,
+    link,
+    outlined,
+    disabled,
+    small,
+    children,
+    ...props
+}) {
     return (
         <Container
             value={value}
@@ -67,9 +77,20 @@ function Button({ value, onClick, link, outlined, disabled, small, ...props }) {
             small={small}
             {...props}
         >
-            {value || props.children}
+            {value || children}
         </Container>
     );
 }
+
+Button.propTypes = {
+    width: PropTypes.any,
+    value: PropTypes.any,
+    onClick: PropTypes.any,
+    link: PropTypes.any,
+    outlined: PropTypes.any,
+    disabled: PropTypes.any,
+    small: PropTypes.any,
+    children: PropTypes.node,
+};
 
 export default Button;

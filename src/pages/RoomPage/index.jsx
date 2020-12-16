@@ -1,19 +1,19 @@
-import React, { useEffect, useState } from "react";
-import styled from "styled-components";
+import React, { useEffect, useState } from 'react';
+import styled from 'styled-components';
 
-import { FaCog } from "react-icons/fa";
+import { FaCog } from 'react-icons/fa';
 
-import Connection from "../../services/connection";
-import PreviewPage from "../PreviewPage";
+import Connection from '../../services/connection';
+import PreviewPage from '../PreviewPage';
 
-import { Flex } from "../../helpers/styles";
-import SidePanel from "../../components/SidePanel";
-import ConfigModal from "../../components/ConfigModal";
-import { default as Rounded } from "../../components/RoundedButton";
+import { Flex } from '../../helpers/styles';
+import SidePanel from '../../components/SidePanel';
+import ConfigModal from '../../components/ConfigModal';
+import Rounded from '../../components/RoundedButton';
 
-import logo from "../../assets/images/letstalk-logo.png";
-import VideoContainer from "../../components/VideoContainer";
-import VideoControls from "../../components/VideoControls";
+import logo from '../../assets/images/letstalk-logo.png';
+import VideoContainer from '../../components/VideoContainer';
+import VideoControls from '../../components/VideoControls';
 
 const Logo = styled.img.attrs(() => ({
     src: logo,
@@ -36,7 +36,7 @@ const Container = styled(Flex)`
 `;
 
 const VideoGrid = styled(Flex).attrs(() => ({
-    id: "video_grid",
+    id: 'video_grid',
 }))`
     position: relative;
     height: 100%;
@@ -82,7 +82,7 @@ const VideoGrid = styled(Flex).attrs(() => ({
 `;
 
 const MinimizedVideoList = styled.div.attrs(() => ({
-    id: "minimized_list",
+    id: 'minimized_list',
 }))`
     background-color: transparent;
     position: absolute;
@@ -191,34 +191,31 @@ function RoomPage() {
                                     <VideoContainer
                                         me
                                         user={roomMembers.find(
-                                            (member) => member.id === myId
+                                            member => member.id === myId,
                                         )}
                                         mediaStream={currentUserStream}
                                     />
                                 )}
 
                                 {connectedUsers &&
-                                    Object.values(connectedUsers).map(
-                                        (user) => {
-                                            if (!user) return null;
+                                    Object.values(connectedUsers).map(user => {
+                                        if (!user) return null;
 
-                                            const currentRoomMember = roomMembers.find(
-                                                (member) =>
-                                                    member.id === user.peer
-                                            );
-                                            return (
-                                                currentRoomMember && (
-                                                    <VideoContainer
-                                                        key={user.peer}
-                                                        user={currentRoomMember}
-                                                        mediaStream={
-                                                            user.remoteStream
-                                                        }
-                                                    />
-                                                )
-                                            );
-                                        }
-                                    )}
+                                        const currentRoomMember = roomMembers.find(
+                                            member => member.id === user.peer,
+                                        );
+                                        return (
+                                            currentRoomMember && (
+                                                <VideoContainer
+                                                    key={user.peer}
+                                                    user={currentRoomMember}
+                                                    mediaStream={
+                                                        user.remoteStream
+                                                    }
+                                                />
+                                            )
+                                        );
+                                    })}
                             </VideoGrid>
 
                             <SidePanel
@@ -229,7 +226,7 @@ function RoomPage() {
 
                         <VideoControls
                             user={roomMembers.find(
-                                (member) => member.id === myId
+                                member => member.id === myId,
                             )}
                             currentUserStream={currentUserStream}
                             setCurrentUserStream={setCurrentUserStream}

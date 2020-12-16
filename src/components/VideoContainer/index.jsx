@@ -1,11 +1,12 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from 'react';
+import PropTypes from 'prop-types';
 
-import styled, { css } from "styled-components";
-import { getInitals, setFocus } from "../../helpers";
+import styled, { css } from 'styled-components';
+import { getInitals, setFocus } from '../../helpers';
 
-import AudioLevels from "../AudioLevels";
-import FullscreenButton from "../FullscreenButton";
-import CircleUserName from "../CircleUserName";
+import AudioLevels from '../AudioLevels';
+import FullscreenButton from '../FullscreenButton';
+import CircleUserName from '../CircleUserName';
 
 const Container = styled.div`
     position: relative;
@@ -22,13 +23,13 @@ const Container = styled.div`
     cursor: pointer;
     background-color: #111;
 
-    ${(props) =>
+    ${props =>
         props.me &&
         css`
             border: 2px solid #c16bd5;
         `}
 
-    ${(props) =>
+    ${props =>
         props.me &&
         !props.screen &&
         css`
@@ -37,7 +38,7 @@ const Container = styled.div`
             }
         `}
 
-    ${(props) =>
+    ${props =>
         props.screen &&
         props.enabled !== true &&
         css`
@@ -54,12 +55,15 @@ const Container = styled.div`
         box-sizing: border-box;
         z-index: 1;
 
-        ${(props) =>
+        ${null /* eslint-disable */}
+        ${props =>
             !props.screen &&
             !props.video &&
             css`
                 display: none;
             `}
+        ${null /* eslint-enable */}
+        
     }
 
     .user_id {
@@ -93,14 +97,14 @@ const CustomAudioLevels = styled(AudioLevels)`
     margin-left: 12px;
 `;
 
-function VideoContainer({ me, user, mediaStream, ...props }) {
+function VideoContainer({ me, user, mediaStream }) {
     const videoRef = useRef(null);
     const screenVideoRef = useRef(null);
 
     const [documentFullScreen, setDocumentFullScreen] = useState(false);
 
     useEffect(() => {
-        const handleFullScreenChange = (e) => {
+        const handleFullScreenChange = () => {
             if (document.fullscreenElement) {
                 setDocumentFullScreen(true);
             } else {
@@ -108,12 +112,12 @@ function VideoContainer({ me, user, mediaStream, ...props }) {
             }
         };
 
-        document.addEventListener("fullscreenchange", handleFullScreenChange);
+        document.addEventListener('fullscreenchange', handleFullScreenChange);
 
         return () => {
             document.removeEventListener(
-                "fullscreenchange",
-                handleFullScreenChange
+                'fullscreenchange',
+                handleFullScreenChange,
             );
         };
 
@@ -139,13 +143,13 @@ function VideoContainer({ me, user, mediaStream, ...props }) {
                     playVideo();
                 }
 
-                videoElement.addEventListener("loadedmetadata", playVideo);
+                videoElement.addEventListener('loadedmetadata', playVideo);
             }
         }
 
         return () => {
             videoElement &&
-                videoElement.removeEventListener("loadedmetadata", playVideo);
+                videoElement.removeEventListener('loadedmetadata', playVideo);
         };
 
         // eslint-disable-next-line
@@ -171,8 +175,8 @@ function VideoContainer({ me, user, mediaStream, ...props }) {
                 screenVideoElement.srcObject = screenStream;
 
                 screenVideoElement.addEventListener(
-                    "loadedmetadata",
-                    playVideo
+                    'loadedmetadata',
+                    playVideo,
                 );
             }
         }
@@ -180,28 +184,28 @@ function VideoContainer({ me, user, mediaStream, ...props }) {
         return () => {
             screenVideoElement &&
                 screenVideoElement.removeEventListener(
-                    "loadedmetadata",
-                    playVideo
+                    'loadedmetadata',
+                    playVideo,
                 );
         };
 
         // eslint-disable-next-line
     }, [mediaStream, screenVideoRef.current]);
 
-    const handleTogglePip = (type) => {
+    const handleTogglePip = type => {
         if (!user || !user[type]) return;
 
-        if (type === "video" && videoRef.current) {
+        if (type === 'video' && videoRef.current) {
             videoRef.current.requestPictureInPicture();
-        } else if (type === "screen" && screenVideoRef.current) {
+        } else if (type === 'screen' && screenVideoRef.current) {
             screenVideoRef.current.requestPictureInPicture();
         }
     };
 
-    const handleToggleFullScreen = (type) => {
-        if (type === "video" && videoRef.current) {
+    const handleToggleFullScreen = type => {
+        if (type === 'video' && videoRef.current) {
             videoRef.current.parentNode.requestFullscreen();
-        } else if (type === "screen" && screenVideoRef.current) {
+        } else if (type === 'screen' && screenVideoRef.current) {
             screenVideoRef.current.parentNode.requestFullscreen();
         }
     };
@@ -221,15 +225,15 @@ function VideoContainer({ me, user, mediaStream, ...props }) {
                 <div className="user_name">
                     {user && user.name} (Compartilhando Tela)
                 </div>
-                {!documentFullScreen && user && user["screen"] && (
+                {!documentFullScreen && user && user['screen'] && (
                     <FullscreenButton
                         pip
-                        handleClick={() => handleTogglePip("screen")}
+                        handleClick={() => handleTogglePip('screen')}
                     />
                 )}
-                {!documentFullScreen && user && user["screen"] && (
+                {!documentFullScreen && user && user['screen'] && (
                     <FullscreenButton
-                        handleClick={() => handleToggleFullScreen("screen")}
+                        handleClick={() => handleToggleFullScreen('screen')}
                     />
                 )}
             </Container>
@@ -252,20 +256,43 @@ function VideoContainer({ me, user, mediaStream, ...props }) {
                         mediaStream={mediaStream}
                     />
                 </div>
-                {!documentFullScreen && user && user["video"] && (
+                {!documentFullScreen && user && user['video'] && (
                     <FullscreenButton
                         pip
-                        handleClick={() => handleTogglePip("video")}
+                        handleClick={() => handleTogglePip('video')}
                     />
                 )}
-                {!documentFullScreen && user && user["video"] && (
+                {!documentFullScreen && user && user['video'] && (
                     <FullscreenButton
-                        handleClick={() => handleToggleFullScreen("video")}
+                        handleClick={() => handleToggleFullScreen('video')}
                     />
                 )}
             </Container>
         </>
     );
 }
+
+VideoContainer.propTypes = {
+    me: PropTypes.oneOfType([
+        PropTypes.bool,
+        PropTypes.objectOf(
+            PropTypes.oneOfType([
+                PropTypes.func,
+                PropTypes.number,
+                PropTypes.string,
+                PropTypes.bool,
+            ]),
+        ),
+    ]),
+    user: PropTypes.objectOf(
+        PropTypes.oneOfType([
+            PropTypes.func,
+            PropTypes.number,
+            PropTypes.string,
+            PropTypes.bool,
+        ]),
+    ),
+    mediaStream: PropTypes.any,
+};
 
 export default VideoContainer;

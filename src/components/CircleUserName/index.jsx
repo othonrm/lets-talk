@@ -1,5 +1,6 @@
-import React from "react";
-import styled from "styled-components";
+import React from 'react';
+import PropTypes from 'prop-types';
+import styled from 'styled-components';
 
 export const Container = styled.div`
     position: absolute;
@@ -15,13 +16,18 @@ export const Container = styled.div`
     border: 3px solid #864995;
     color: #292929;
 
+    text-transform: uppercase;
     display: flex;
     justify-content: center;
     align-items: center;
 `;
 
-function CircleUserName({ ...props }) {
-    return <Container>{props.children}</Container>;
+function CircleUserName({ children }) {
+    return <Container>{children}</Container>;
 }
+
+CircleUserName.propTypes = {
+    children: PropTypes.node,
+};
 
 export default CircleUserName;

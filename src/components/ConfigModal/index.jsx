@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from "react";
-import styled from "styled-components";
+import React, { useEffect, useState } from 'react';
+import styled from 'styled-components';
 
-import { FaMicrophoneAlt, FaVideo, FaVolumeUp, FaTimes } from "react-icons/fa";
+import { FaMicrophoneAlt, FaVideo, FaVolumeUp, FaTimes } from 'react-icons/fa';
 
-import Select from "../Select";
+import Select from '../Select';
 
-import enter_room from "../../assets/audios/enter_room.mp3";
-import Button from "../Button";
-import { darkmodeEnabled, darktheme, Flex } from "../../helpers/styles";
+import enterRoomClip from '../../assets/audios/enter_room.mp3';
+import Button from '../Button';
+import { darkmodeEnabled, darktheme, Flex } from '../../helpers/styles';
 
 const Backdrop = styled.div`
     position: fixed;
@@ -41,20 +41,20 @@ function ConfigModal() {
     const [active, setActive] = useState(false);
     const [mediaDevices, setMediaDevices] = useState([]);
     const [values, setValues] = useState({
-        audioinput: localStorage.getItem("audioinput_device") || undefined,
-        audiooutput: localStorage.getItem("audiooutput_device") || undefined,
-        videoinput: localStorage.getItem("videoinput_device") || undefined,
+        audioinput: localStorage.getItem('audioinput_device') || undefined,
+        audiooutput: localStorage.getItem('audiooutput_device') || undefined,
+        videoinput: localStorage.getItem('videoinput_device') || undefined,
     });
-    const bodyElement = document.querySelector("body");
+    const bodyElement = document.querySelector('body');
 
     useEffect(() => {
         navigator.mediaDevices
             .enumerateDevices()
-            .then((device) => {
+            .then(device => {
                 setMediaDevices(device);
             })
-            .catch((reason) =>
-                alert("Cannot get media devices because: " + reason)
+            .catch(reason =>
+                alert('Cannot get media devices because: ' + reason),
             );
 
         return () => {
@@ -64,25 +64,25 @@ function ConfigModal() {
         // eslint-disable-next-line
     }, []);
 
-    const handleChange = (e) => {
+    const handleChange = e => {
         setValues({
             ...values,
             [e.target.name]: e.target.value,
         });
 
-        if (e.target.name === "audioinput") {
-            localStorage.setItem("audioinput_device", e.target.value);
-        } else if (e.target.name === "audiooutput") {
-            localStorage.setItem("audiooutput_device", e.target.value);
-        } else if (e.target.name === "videoinput") {
-            localStorage.setItem("videoinput_device", e.target.value);
+        if (e.target.name === 'audioinput') {
+            localStorage.setItem('audioinput_device', e.target.value);
+        } else if (e.target.name === 'audiooutput') {
+            localStorage.setItem('audiooutput_device', e.target.value);
+        } else if (e.target.name === 'videoinput') {
+            localStorage.setItem('videoinput_device', e.target.value);
         }
-        typeof window.onChangeMediaDevices === "function" &&
+        typeof window.onChangeMediaDevices === 'function' &&
             window.onChangeMediaDevices();
     };
 
     const handleTestCurrentOutputDevice = async () => {
-        const audioEnterRoom = new Audio(enter_room);
+        const audioEnterRoom = new Audio(enterRoomClip);
         if (values.audiooutput)
             await audioEnterRoom.setSinkId(values.audiooutput);
 
@@ -92,10 +92,10 @@ function ConfigModal() {
     const handleShowModal = () => {
         let top = window.scrollY;
 
-        bodyElement.style.position = "fixed";
+        bodyElement.style.position = 'fixed';
         bodyElement.style.top = `-${top}px`;
-        bodyElement.style.left = "0px";
-        bodyElement.style.right = "0px";
+        bodyElement.style.left = '0px';
+        bodyElement.style.right = '0px';
 
         setActive(true);
     };
@@ -103,17 +103,17 @@ function ConfigModal() {
 
     const handleClose = () => {
         setActive(false);
-        typeof window.onChangeMediaDevices === "function" &&
+        typeof window.onChangeMediaDevices === 'function' &&
             window.onChangeMediaDevices();
 
         const scrollY = bodyElement.style.top;
 
-        bodyElement.style.position = "";
-        bodyElement.style.top = "";
-        bodyElement.style.left = "";
-        bodyElement.style.right = "";
+        bodyElement.style.position = '';
+        bodyElement.style.top = '';
+        bodyElement.style.left = '';
+        bodyElement.style.right = '';
 
-        window.scrollTo(0, -parseInt(scrollY || "0"));
+        window.scrollTo(0, -parseInt(scrollY || '0'));
     };
 
     return (
@@ -143,8 +143,8 @@ function ConfigModal() {
                             onChange={handleChange}
                         >
                             {mediaDevices
-                                .filter((item) => item.kind === "audioinput")
-                                .map((device) => (
+                                .filter(item => item.kind === 'audioinput')
+                                .map(device => (
                                     <option
                                         key={device.deviceId}
                                         value={device.deviceId}
@@ -177,8 +177,8 @@ function ConfigModal() {
                             onChange={handleChange}
                         >
                             {mediaDevices
-                                .filter((item) => item.kind === "audiooutput")
-                                .map((device) => (
+                                .filter(item => item.kind === 'audiooutput')
+                                .map(device => (
                                     <option
                                         key={device.deviceId}
                                         value={device.deviceId}
@@ -196,8 +196,8 @@ function ConfigModal() {
                             onChange={handleChange}
                         >
                             {mediaDevices
-                                .filter((item) => item.kind === "videoinput")
-                                .map((device) => (
+                                .filter(item => item.kind === 'videoinput')
+                                .map(device => (
                                     <option
                                         key={device.deviceId}
                                         value={device.deviceId}

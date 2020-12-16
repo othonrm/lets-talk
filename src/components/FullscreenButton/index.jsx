@@ -1,7 +1,7 @@
-import React from "react";
-
-import { FaExpand } from "react-icons/fa";
-import styled, { css } from "styled-components";
+import React from 'react';
+import PropTypes from 'prop-types';
+import { FaExpand } from 'react-icons/fa';
+import styled, { css } from 'styled-components';
 
 const Container = styled.button`
     position: absolute;
@@ -20,7 +20,7 @@ const Container = styled.button`
     cursor: pointer;
     z-index: 10;
 
-    ${(props) =>
+    ${props =>
         props.pip &&
         css`
             margin-right: 55px;
@@ -42,5 +42,10 @@ function FullscreenButton({ handleClick, pip }) {
         </Container>
     );
 }
+
+FullscreenButton.propTypes = {
+    handleClick: PropTypes.any,
+    pip: PropTypes.any,
+};
 
 export default FullscreenButton;

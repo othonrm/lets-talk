@@ -1,21 +1,21 @@
-import React, { useState } from "react";
-import { useHistory } from "react-router-dom";
-import styled from "styled-components";
-import { v4 as uuidv4 } from "uuid";
+import React, { useState } from 'react';
+import { useHistory } from 'react-router-dom';
+import styled from 'styled-components';
+import { v4 as uuidv4 } from 'uuid';
 
-import { FaVideo } from "react-icons/fa";
+import { FaVideo } from 'react-icons/fa';
 
-import { darkmodeEnabled, darktheme, Flex } from "../../helpers/styles";
+import { lighten } from 'polished';
+import { darkmodeEnabled, darktheme, Flex } from '../../helpers/styles';
 
-import Button from "../../components/Button";
+import Button from '../../components/Button';
 
-import logo from "../../assets/images/letstalk-logo.png";
-import people_grid from "../../assets/images/people_grid.png";
-import { lighten } from "polished";
+import logo from '../../assets/images/letstalk-logo.png';
+import peopleGrid from '../../assets/images/people_grid.png';
 
 const HeaderLogo = styled.img.attrs(() => ({
     src: logo,
-    height: "62px",
+    height: '62px',
 }))`
     position: absolute;
     top: 1rem;
@@ -102,7 +102,7 @@ function HomePage() {
             width="85%"
             height="100%"
             alignSelf="center"
-            alignItems={window.innerWidth < 1068 ? "center" : "flex-start"}
+            alignItems={window.innerWidth < 1068 ? 'center' : 'flex-start'}
             direction="column"
             margin="80px 0 0 0"
         >
@@ -111,23 +111,24 @@ function HomePage() {
             <Flex
                 width="100%"
                 height="100%"
-                direction={window.innerWidth < 1068 ? "column" : "row"}
+                direction={window.innerWidth < 1068 ? 'column' : 'row'}
             >
                 <Flex
                     flex="1"
                     width="50%"
                     direction="column"
-                    alignItems={"flex-start"}
+                    alignItems="flex-start"
                 >
                     <Container
                         direction="column"
                         alignItems={
-                            window.innerWidth < 1068 ? "center" : "flex-start"
+                            window.innerWidth < 1068 ? 'center' : 'flex-start'
                         }
                         margin="0 0 32px 0"
                     >
                         <Title>
-                            O que está esperando <br />
+                            O que está esperando
+                            <br />
                             para começar um papo? Não custa nada!
                         </Title>
                         <SubTitle>
@@ -158,7 +159,7 @@ function HomePage() {
                 </Flex>
 
                 <TabletContainer>
-                    <img src={people_grid} alt="Pessoas" />
+                    <img src={peopleGrid} alt="Pessoas" />
                 </TabletContainer>
             </Flex>
         </Flex>

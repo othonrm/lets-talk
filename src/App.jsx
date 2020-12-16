@@ -1,13 +1,13 @@
-import { Route, Switch, useHistory } from "react-router-dom";
+import React, { useEffect } from 'react';
+import { Route, Switch, useHistory } from 'react-router-dom';
 
-import { GlobalStyle } from "./helpers/styles";
+import { GlobalStyle } from './helpers/styles';
 
-import RoomPage from "./pages/RoomPage";
+import RoomPage from './pages/RoomPage';
 
-import { useEffect } from "react";
-import RoomLeavePage from "./pages/RoomLeavePage";
-import NotFoundPage from "./pages/NotFoundPage";
-import HomePage from "./pages/HomePage";
+import RoomLeavePage from './pages/RoomLeavePage';
+import NotFoundPage from './pages/NotFoundPage';
+import HomePage from './pages/HomePage';
 
 function App() {
     const history = useHistory();

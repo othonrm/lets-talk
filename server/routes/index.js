@@ -14,11 +14,11 @@ router.get('/', (req, res) => {
 });
 
 // Define the about route
-router.get('/about', function (req, res) {
+router.get('/about', function(req, res) {
     res.send('About us');
 });
 
-router.get('/api/v1/rooms', (req, res) => {
+router.get('/rooms', (req, res) => {
     res.json(rooms);
 });
 

@@ -1,9 +1,11 @@
-import { lighten } from "polished";
-import React from "react";
-import styled, { css } from "styled-components";
-import { darktheme } from "../../helpers/styles";
+/* eslint-disable indent */
+import React from 'react';
+import PropTypes from 'prop-types';
+import styled, { css } from 'styled-components';
+import { lighten } from 'polished';
+import { darktheme } from '../../helpers/styles';
 
-import { ReactComponent as CaretDown } from "./../../assets/images/caret-down.svg";
+import { ReactComponent as CaretDown } from '../../assets/images/caret-down.svg';
 
 const Caret = styled(CaretDown)`
     position: absolute;
@@ -26,15 +28,15 @@ const Container = styled.div`
 
     text-decoration: none;
     border-radius: 4px;
-    margin: ${(props) => (props.margin ? props.margin : "1rem")};
-    height: ${(props) => props.height && props.height};
-    width: ${(props) => props.width && props.width};
-    min-height: ${(props) => props.minHeight && props.minHeight};
-    min-width: ${(props) => props.minWidth && props.minWidth};
+    margin: ${props => (props.margin ? props.margin : '1rem')};
+    height: ${props => props.height && props.height};
+    width: ${props => props.width && props.width};
+    min-height: ${props => props.minHeight && props.minHeight};
+    min-width: ${props => props.minWidth && props.minWidth};
 
     font-size: 17px;
 
-    ${(props) =>
+    ${props =>
         props.disabled &&
         css`
             pointer-events: none;
@@ -44,15 +46,15 @@ const Container = styled.div`
     & > *:not(:last-child) {
         margin-right: 8px;
     }
-    padding: ${(props) =>
+    padding: ${props =>
         props.padding
             ? props.padding
             : props.prepend || props.append
-            ? "0.5rem 1rem"
-            : "0.5rem 2rem"};
+            ? '0.5rem 1rem'
+            : '0.5rem 2rem'};
 
     ::after {
-        content: "";
+        content: '';
         width: 20px;
     }
 
@@ -74,7 +76,7 @@ const Container = styled.div`
             transform: scaleY(-1) translateY(50%);
         }
 
-        ${(props) =>
+        ${props =>
             props.light &&
             css`
                 color: #fff;
@@ -85,7 +87,7 @@ const Container = styled.div`
         }
     }
 
-    ${(props) =>
+    ${props =>
         props.light &&
         css`
             color: #fff;
@@ -98,7 +100,16 @@ const Append = styled.div`
     justify-content: center;
 `;
 
-function Select({ name, options, placeholder, id, append, prepend, ...props }) {
+function Select({
+    name,
+    options,
+    placeholder,
+    id,
+    append,
+    prepend,
+    children,
+    ...props
+}) {
     return (
         <Container {...props} append={append} prepend={prepend}>
             {prepend && <Append prepend>{prepend}</Append>}
@@ -110,7 +121,7 @@ function Select({ name, options, placeholder, id, append, prepend, ...props }) {
                     </option>
                 )}
                 {options &&
-                    options.map((item, index) => (
+                    options.map(item => (
                         <option
                             key={`${name}_option_${item.value || item}`}
                             value={item.value || item}
@@ -118,7 +129,7 @@ function Select({ name, options, placeholder, id, append, prepend, ...props }) {
                             {item.label || item}
                         </option>
                     ))}
-                {props.children}
+                {children}
             </select>
 
             <Caret />
@@ -127,5 +138,15 @@ function Select({ name, options, placeholder, id, append, prepend, ...props }) {
         </Container>
     );
 }
+
+Select.propTypes = {
+    name: PropTypes.string,
+    options: PropTypes.any,
+    placeholder: PropTypes.string,
+    id: PropTypes.string,
+    append: PropTypes.node,
+    prepend: PropTypes.node,
+    children: PropTypes.node,
+};
 
 export default Select;

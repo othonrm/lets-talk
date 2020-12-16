@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from "react";
-import styled, { css } from "styled-components";
+import React, { useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
+import styled, { css } from 'styled-components';
 
-import { computeAudioLevel } from "../../helpers";
+import { computeAudioLevel } from '../../helpers';
 
 const Container = styled.div`
     background-color: transparent;
@@ -29,7 +30,7 @@ const AudioBar = styled.div`
         margin-right: 4px;
     }
 
-    ${(props) =>
+    ${props =>
         props.muted &&
         css`
             background-color: #d1d1d1;
@@ -55,7 +56,7 @@ function AudioLevels({ muted, mediaStream, className, ...props }) {
     }, [mediaStream, muted]);
 
     return (
-        <Container className={[className, "audio_level"].join(" ")} {...props}>
+        <Container className={[className, 'audio_level'].join(' ')} {...props}>
             <AudioBar
                 className="audio_bar"
                 ref={audioBarsRefs[0]}
@@ -74,5 +75,11 @@ function AudioLevels({ muted, mediaStream, className, ...props }) {
         </Container>
     );
 }
+
+AudioLevels.propTypes = {
+    muted: PropTypes.any,
+    mediaStream: PropTypes.any,
+    className: PropTypes.any,
+};
 
 export default AudioLevels;

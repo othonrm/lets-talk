@@ -1,7 +1,9 @@
-import { lighten } from "polished";
-import React from "react";
-import styled, { css } from "styled-components";
-import { darktheme } from "../../helpers/styles";
+import React from 'react';
+import PropTypes from 'prop-types';
+import styled, { css } from 'styled-components';
+import { lighten } from 'polished';
+
+import { darktheme } from '../../helpers/styles';
 
 const Container = styled.button`
     position: relative;
@@ -27,7 +29,7 @@ const Container = styled.button`
         margin-right: 10px;
     }
 
-    ${(props) =>
+    ${props =>
         props.muted &&
         css`
             background-color: #fb5555;
@@ -56,7 +58,7 @@ const Badge = styled.div`
 
     overflow: hidden;
 
-    ${(props) =>
+    ${props =>
         props.muted &&
         css`
             background-color: #fff;
@@ -64,13 +66,19 @@ const Badge = styled.div`
         `}
 `;
 
-function RoundedButton({ muted, badge, ...props }) {
+function RoundedButton({ muted, badge, children, ...props }) {
     return (
         <Container muted={muted} {...props}>
             {badge && <Badge>{badge}</Badge>}
-            {props.children}
+            {children}
         </Container>
     );
 }
+
+RoundedButton.propTypes = {
+    muted: PropTypes.any,
+    badge: PropTypes.any,
+    children: PropTypes.node,
+};
 
 export default RoundedButton;

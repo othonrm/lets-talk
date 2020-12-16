@@ -1,4 +1,4 @@
-import styled, { createGlobalStyle } from "styled-components";
+import styled, { createGlobalStyle } from 'styled-components';
 
 export const breakpoints = {
     xs: 576,
@@ -10,28 +10,27 @@ export const breakpoints = {
 };
 
 export const colors = {
-    lightcolor: "#eee",
-    lightercolor: "#fff",
-    darkcolor: "#2f2f2f",
-    darkercolor: "#292929",
+    lightcolor: '#eee',
+    lightercolor: '#fff',
+    darkcolor: '#2f2f2f',
+    darkercolor: '#292929',
 };
 
-export const darkmodeEnabled = window.matchMedia("(prefers-color-scheme: dark)")
+export const darkmodeEnabled = window.matchMedia('(prefers-color-scheme: dark)')
     .matches;
 
 export const darktheme = {
     primary: darkmodeEnabled ? colors.darkcolor : colors.lightercolor,
     secondary: darkmodeEnabled ? colors.darkercolor : colors.lightcolor,
-    fontlight: darkmodeEnabled ? "#444" : "#fff",
-    fontdark: darkmodeEnabled ? "#fff" : "#444",
+    fontlight: darkmodeEnabled ? '#444' : '#fff',
+    fontdark: darkmodeEnabled ? '#fff' : '#444',
 };
 
-export var isMobile = window.innerWidth <= breakpoints.mobile;
+export const isMobile = window.innerWidth <= breakpoints.mobile;
 
 export const isMobileMediaQuery = `@media screen and (max-width: ${breakpoints.mobile}px)`;
-export const notMobileMediaQuery = `@media screen and (min-width: ${
-    breakpoints.mobile + 1
-}px)`;
+export const notMobileMediaQuery = `@media screen and (min-width: ${breakpoints.mobile +
+    1}px)`;
 
 export const GlobalStyle = createGlobalStyle`
 
@@ -69,14 +68,13 @@ export const GlobalStyle = createGlobalStyle`
 `;
 
 export const Flex = styled.div`
-    display: ${({ display }) => (display ? display : "flex")};
-    flex-wrap: ${({ wrap }) => (wrap ? wrap : "wrap")};
-    flex-grow: ${({ grow }) => (grow ? grow : "initial")};
+    display: ${({ display }) => display || 'flex'};
+    flex-wrap: ${({ wrap }) => wrap || 'wrap'};
+    flex-grow: ${({ grow }) => grow || 'initial'};
     ${({ alignSelf }) => alignSelf && `align-self: ${alignSelf};`};
     ${({ justifySelf }) => justifySelf && `justify-self: ${justifySelf};`};
-    align-items: ${({ alignItems }) => (alignItems ? alignItems : "center")};
-    justify-content: ${({ justifyContent }) =>
-        justifyContent ? justifyContent : "center"};
+    align-items: ${({ alignItems }) => alignItems || 'center'};
+    justify-content: ${({ justifyContent }) => justifyContent || 'center'};
     ${({ background }) => background && `background: ${background}`};
     ${({ color }) => color && `color: ${color}`};
     ${({ border }) => border && `border: ${border}`};
@@ -97,9 +95,9 @@ export const Flex = styled.div`
     ${({ order }) => order && `order: ${order}`};
     ${({ overflow }) => overflow && `overflow: ${overflow}`};
     ${({ transition }) => transition && `transition: ${transition}`};
-    ${({ onClick }) => onClick && "cursor: pointer"};
+    ${({ onClick }) => onClick && 'cursor: pointer'};
 
-    ${(props) =>
+    ${props =>
         props.alignLast &&
         `
         &::after {
@@ -108,7 +106,7 @@ export const Flex = styled.div`
         }
     `}
 
-    ${(props) =>
+    ${props =>
         props.desktop &&
         `
         ${isMobileMediaQuery} {
@@ -116,7 +114,7 @@ export const Flex = styled.div`
         }
     `}
 
-    ${(props) =>
+    ${props =>
         props.mobile &&
         `
         ${notMobileMediaQuery} {
