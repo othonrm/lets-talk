@@ -36,7 +36,6 @@ const connectSocketNPeer = (callback) => {
 };
 
 function Connection({
-    connectedUsers,
     setConnectedUsers,
     currentUserStream,
     setCurrentUserStream,
@@ -225,7 +224,8 @@ function Connection({
         });
 
         socket.on("user-disconnected", (userId) => {
-            if (connectedUsers[userId]) connectedUsers[userId].close();
+            if (window.connectedUsers[userId])
+                window.connectedUsers[userId].close();
         });
 
         socket.on("invaded-not-allowed", () => {
@@ -293,7 +293,7 @@ function Connection({
 
     const stopScreenShare = () => {
         let peerConnections = Object.values({
-            ...connectedUsers,
+            ...window.connectedUsers,
         }).reduce((acc, curr) => {
             return [...acc, curr.peerConnection];
         }, []);
@@ -334,7 +334,7 @@ function Connection({
                 };
 
                 let peerConnections = Object.values({
-                    ...connectedUsers,
+                    ...window.connectedUsers,
                 }).reduce((acc, curr) => {
                     return [...acc, curr.peerConnection];
                 }, []);
@@ -378,10 +378,10 @@ function Connection({
         });
 
         call.on("stream", function (callStream) {
-            if (connectedUsers[userId]) return;
+            if (window.connectedUsers[userId]) return;
 
             setConnectedUsers({
-                ...connectedUsers,
+                ...window.connectedUsers,
                 [userId]: call,
             });
 
@@ -390,7 +390,7 @@ function Connection({
 
         call.on("close", () => {
             setConnectedUsers({
-                ...connectedUsers,
+                ...window.connectedUsers,
                 [call.peer]: undefined,
             });
         });
@@ -402,24 +402,24 @@ function Connection({
         call.answer(stream);
 
         call.on("stream", function (callStream) {
-            if (connectedUsers[call.peer]) return;
+            if (window.connectedUsers[call.peer]) return;
 
             setConnectedUsers({
-                ...connectedUsers,
+                ...window.connectedUsers,
                 [call.peer]: call,
             });
         });
 
         call.on("disconnected", () => {
             setConnectedUsers({
-                ...connectedUsers,
+                ...window.connectedUsers,
                 [call.peer]: undefined,
             });
         });
 
         call.on("close", () => {
             setConnectedUsers({
-                ...connectedUsers,
+                ...window.connectedUsers,
                 [call.peer]: undefined,
             });
         });

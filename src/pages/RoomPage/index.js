@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 
 import { FaCog } from "react-icons/fa";
@@ -161,6 +161,10 @@ function RoomPage() {
         window.leaveRoom();
     };
 
+    useEffect(() => {
+        window.connectedUsers = connectedUsers;
+    }, [connectedUsers]);
+
     return (
         <>
             <ConfigModal />
@@ -183,7 +187,6 @@ function RoomPage() {
                                 >
                                     <FaCog />
                                 </RoundedButton>
-
                                 {currentUserStream && myId && (
                                     <VideoContainer
                                         me
