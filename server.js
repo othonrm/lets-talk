@@ -8,6 +8,8 @@ const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
 const app = express();
+const expressWs = require('express-ws')(app);
+
 const server = require('http').Server(app);
 
 const port = process.env.PORT || 8080;
