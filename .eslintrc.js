@@ -33,6 +33,7 @@ module.exports = {
             'error',
             { allowShortCircuit: true, allowTernary: true },
         ],
+        'linebreak-style': ['error', 'windows'],
         'no-param-reassign': ['error', { props: false }],
         'arrow-body-style': 'off',
         'arrow-parens': 'off',
@@ -40,7 +41,6 @@ module.exports = {
         'react/jsx-curly-newline': 'off',
         'react/forbid-prop-types': ['error', { forbid: ['array', 'object'] }],
         'no-unused-vars': 'warn',
-        'linebreak-style': ['error', 'windows'],
         indent: [
             'error',
             4,
