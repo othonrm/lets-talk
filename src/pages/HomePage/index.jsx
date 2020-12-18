@@ -12,6 +12,7 @@ import Button from '../../components/Button';
 
 import logo from '../../assets/images/letstalk-logo.png';
 import peopleGrid from '../../assets/images/people_grid.png';
+import api from '../../services/api';
 
 const HeaderLogo = styled.img.attrs(() => ({
     src: logo,
@@ -89,8 +90,24 @@ function HomePage() {
 
     const [roomName, setRoomName] = useState();
 
-    const handleCreateNewRoom = () => {
-        history.push(`/${uuidv4()}`);
+    const handleCreateNewRoom = async () => {
+        const newRoomId = uuidv4();
+
+        const newRoomResponse = await api
+            .post(`/rooms`, {
+                room_id: newRoomId,
+            })
+            .catch(res => res.response);
+
+        console.log(newRoomResponse);
+
+        if (newRoomResponse && newRoomResponse.status === 201) {
+            history.push(`/${newRoomId}`);
+        } else {
+            alert(
+                'Não foi possível criar sua sala, por favor tente novamente.',
+            );
+        }
     };
 
     const handleEnterRoom = () => {
@@ -151,7 +168,7 @@ function HomePage() {
                             <TextInput
                                 name="room_name"
                                 value={roomName}
-                                onChange={(e) => setRoomName(e.target.value)}
+                                onChange={e => setRoomName(e.target.value)}
                                 placeholder="Nome da sala"
                             />
                         </form>

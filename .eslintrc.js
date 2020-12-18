@@ -39,7 +39,7 @@ module.exports = {
         'implicit-arrow-linebreak': 'off',
         'react/jsx-curly-newline': 'off',
         'react/forbid-prop-types': ['error', { forbid: ['array', 'object'] }],
-
+        'no-unused-vars': 'warn',
         'linebreak-style': ['error', 'windows'],
         indent: [
             'error',

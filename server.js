@@ -1,10 +1,11 @@
-/* eslint-disable operator-linebreak */
+/* eslint-disable operator-linebreak, indent */
 const express = require('express');
-const cors = require('cors');
+const favicon = require('express-favicon');
 const path = require('path');
-
+const bodyParser = require('body-parser');
 const { ExpressPeerServer } = require('peer');
 const { v4: uuidv4 } = require('uuid');
+require('dotenv').config();
 
 const app = express();
 const server = require('http').Server(app);
@@ -20,13 +21,19 @@ const io = require('socket.io')(server, {
     },
 });
 
-const routes = require('./server/routes');
+const api = require('./server/routes/api');
+const {
+    getRoom,
+    updateRoom,
+    deleteRoom,
+} = require('./server/app/providers/Room');
 
 const peerServer = ExpressPeerServer(server, {
     debug: true,
 });
 
-app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
     const allowedOrigins =
@@ -42,6 +49,11 @@ app.use((req, res, next) => {
 
     if (allowedOrigins.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+        res.setHeader(
+            'Access-Control-Allow-Origin',
+            'https://www.lets-talk.dev.br',
+        );
     }
     res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -49,9 +61,9 @@ app.use((req, res, next) => {
     return next();
 });
 
-// app.use(favicon(__dirname + "/build/favicon.ico"));
+app.use(favicon(__dirname + '/public/favicon.png'));
 
-app.use('/api/v1', routes);
+app.use('/api/v1', api);
 
 app.use('/peerjs', peerServer);
 
@@ -62,20 +74,16 @@ app.get('/*', (req, res) => {
     res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
-const rooms = {
-    'sala-premium': { owner: 'othon', locked: true, users: [] },
-};
-
-global.rooms = rooms;
-
 const allowedUsers = {};
 
 io.on('connection', socket => {
-    socket.on('knock-room', (roomId, userName) => {
-        if (!rooms[roomId] || rooms[roomId].locked !== true) {
+    socket.on('knock-room', async (roomId, userName) => {
+        const currentRoom = await getRoom(roomId);
+
+        if (!currentRoom || currentRoom.locked !== true) {
             io.to(socket.id).emit('allowed-to-enter', true);
         } else {
-            io.to(rooms[roomId].owner).emit(
+            io.to(currentRoom.owner).emit(
                 'knock-request',
                 roomId,
                 userName,
@@ -86,25 +94,17 @@ io.on('connection', socket => {
 
     socket.on(
         'join-room',
-        (roomId, userId, userName, pass, video = true, audio = true) => {
-            rooms[roomId] = {
-                ...(rooms[roomId] || {}),
-                owner: rooms[roomId] ? rooms[roomId].owner : socket.id,
-                locked: (rooms[roomId] && rooms[roomId].locked) || false,
-                users: [
-                    ...((rooms[roomId] && rooms[roomId].users) || []),
-                    {
-                        id: userId,
-                        name: userName,
-                        socket: socket.id,
-                        video,
-                        audio,
-                    },
-                ],
-            };
+        async (roomId, userId, userName, pass, video = true, audio = true) => {
+            let joinedRoom = await getRoom(roomId);
+
+            if (!joinedRoom) {
+                io.to(socket.id).emit('room-not-found');
+
+                return;
+            }
 
             if (
-                rooms[roomId].locked &&
+                joinedRoom.locked &&
                 (!allowedUsers[roomId] ||
                     !allowedUsers[roomId].find(item => {
                         return item === pass;
@@ -114,85 +114,130 @@ io.on('connection', socket => {
 
                 return;
             }
-            if (
-                rooms[roomId].locked &&
-                allowedUsers[roomId] &&
-                allowedUsers[roomId].find(item => {
-                    return item === pass;
-                })
-            ) {
-                // allowedUsers[roomId] = [
-                //     ...allowedUsers[roomId].filter((item) => item !== pass),
-                // ];
-            }
+
+            // handle allowed user passes remove after entered - one way ticket
+            // if (
+            //     joinedRoom.locked &&
+            //     allowedUsers[roomId] &&
+            //     allowedUsers[roomId].find(item => {
+            //         return item === pass;
+            //     })
+            // ) {
+            //     allowedUsers[roomId] = [
+            //         ...allowedUsers[roomId].filter((item) => item !== pass),
+            //     ];
+            // }
 
             socket.join(roomId);
+
+            const socketRooms = [...io.of('/').adapter.rooms];
+
+            const socketRoom =
+                socketRooms &&
+                socketRooms.find(item => {
+                    item[1] = [...item[1]];
+                    return item[0] === roomId;
+                });
+
+            joinedRoom = await updateRoom(roomId, {
+                owner: joinedRoom ? joinedRoom.owner || socket.id : socket.id,
+                locked: (joinedRoom && joinedRoom.locked) || false,
+                members: [
+                    ...(joinedRoom.members || []).filter(member =>
+                        socketRoom[1].find(item => item === member.socket),
+                    ),
+                    {
+                        id: userId,
+                        name: userName,
+                        socket: socket.id,
+                        video,
+                        audio,
+                    },
+                ],
+            });
 
             socket
                 .to(roomId)
                 .broadcast.emit('user-connected', userId, userName);
 
-            io.to(roomId).emit('room-members', rooms[roomId].users);
+            await sendRoomMembers(roomId);
 
-            if (rooms[roomId] && rooms[roomId].owner === socket.id) {
+            if (
+                joinedRoom.owner === socket.id ||
+                !joinedRoom.members.find(
+                    member => member.socket === joinedRoom.owner,
+                )
+            ) {
+                await updateRoom(roomId, {
+                    owner: socket.id,
+                });
+
                 io.to(roomId).emit('room-owner', socket.id);
             }
 
-            socket.on('disconnect', () => {
+            socket.on('disconnect', async () => {
                 socket.to(roomId).broadcast.emit('user-disconnected', userId);
 
-                if (rooms[roomId]) {
-                    rooms[roomId] = {
-                        ...rooms[roomId],
-                        users: [
-                            ...(rooms[roomId].users || []).filter(item => {
+                let currentRoom = await getRoom(roomId);
+
+                if (currentRoom) {
+                    currentRoom = await updateRoom(roomId, {
+                        members: [
+                            ...currentRoom.members.filter(item => {
                                 return item.id !== userId;
                             }),
                         ],
-                    };
+                    });
 
-                    if (rooms[roomId].users.length === 0) {
-                        delete rooms[roomId];
-                    } else if (rooms[roomId].owner === socket.id) {
-                        rooms[roomId].owner = rooms[roomId].users[0].socket;
+                    if (currentRoom.members.length === 0) {
+                        await deleteRoom(roomId);
+                    } else if (currentRoom.owner === socket.id) {
+                        currentRoom.owner = currentRoom.members[0].socket;
                         io.to(roomId).emit(
                             'room-owner',
-                            rooms[roomId].users[0].socket,
+                            currentRoom.members[0].socket,
                         );
                     }
                 }
 
-                rooms[roomId] &&
-                    io.to(roomId).emit('room-members', rooms[roomId].users);
+                await sendRoomMembers(roomId);
             });
 
-            socket.on('toggle-track', (track, enabled) => {
-                rooms[roomId].users.find(user => {
+            socket.on('toggle-track', async (track, enabled) => {
+                const currentRoom = await getRoom(roomId);
+
+                currentRoom.members.find(user => {
                     return user.socket === socket.id;
                 })[track] = enabled;
 
-                io.to(roomId).emit('room-members', rooms[roomId].users);
+                await updateRoom(roomId, {
+                    members: [...currentRoom.members],
+                });
+
+                await sendRoomMembers(roomId);
             });
 
-            socket.on('lock-room', (lock = undefined) => {
+            socket.on('lock-room', async (lock = undefined) => {
+                const currentRoom = await getRoom(roomId);
+
                 if (
-                    rooms[roomId] &&
-                    (rooms[roomId].owner === undefined ||
-                        rooms[roomId].owner === socket.id)
+                    currentRoom &&
+                    (currentRoom.owner === undefined ||
+                        currentRoom.owner === socket.id)
                 ) {
-                    if (!rooms[roomId].owner) rooms[roomId].owner = socket.id;
+                    if (!currentRoom.owner) currentRoom.owner = socket.id;
 
                     if (lock === undefined) {
-                        rooms[roomId].locked = !rooms[roomId].locked;
+                        currentRoom.locked = !currentRoom.locked;
                     } else {
-                        rooms[roomId].locked = lock === true;
+                        currentRoom.locked = lock === true;
                     }
-                } else if (rooms[roomId].owner !== socket.id) {
+                } else if (currentRoom.owner !== socket.id) {
                     console.log(
                         `Clown trying to lock room: ${roomId} ${socket.id}`,
                     );
                 }
-                io.to(roomId).emit('room-lock', rooms[roomId].locked);
+                io.to(roomId).emit('room-lock', currentRoom.locked);
             });
 
             socket.on('knock-response', socketId => {
@@ -215,3 +260,38 @@ io.on('connection', socket => {
 });
 
 server.listen(port);
+
+const sendRoomMembers = async roomId => {
+    let currentRoom = await getRoom(roomId);
+
+    const socketRooms = [...io.of('/').adapter.rooms];
+
+    const socketRoom =
+        socketRooms &&
+        socketRooms.find(item => {
+            item[1] = [...item[1]];
+            return item[0] === roomId;
+        });
+
+    if (currentRoom) {
+        let notFoundMembers =
+            socketRoom &&
+            currentRoom.members.filter(
+                member => !socketRoom[1].find(item => item === member.socket),
+            ).length;
+
+        if (notFoundMembers > 0) {
+            console.log('removing not found users before send users');
+
+            currentRoom = await updateRoom(roomId, {
+                members: [
+                    currentRoom.members.filter(member =>
+                        socketRoom[1].find(item => item === member.socket),
+                    ),
+                ],
+            });
+        }
+
+        io.to(roomId).emit('room-members', currentRoom.members);
+    }
+};

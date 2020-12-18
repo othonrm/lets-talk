@@ -44,7 +44,7 @@ function Connection({
 }) {
     const { getUserMedia } = navigator.mediaDevices;
     // eslint-disable-next-line
-    const { room_id } = useParams();
+    const roomId = useParams().room_id;
 
     const forceUpdate = useForceUpdate();
 
@@ -140,7 +140,7 @@ function Connection({
             socket && socket.close();
 
             // eslint-disable-next-line
-            window.location.replace(`/${room_id}/out`);
+            window.location.replace(`/${roomId}/out`);
         }, 500);
     };
 
@@ -176,6 +176,11 @@ function Connection({
             if (window.connectedUsers[userId]) {
                 window.connectedUsers[userId].close();
             }
+        });
+
+        socket.on('room-not-found', () => {
+            console.log('Room not found');
+            window.location.replace(`/${roomId}/not-found`);
         });
 
         socket.on('invaded-not-allowed', () => {
@@ -219,7 +224,7 @@ function Connection({
 
             socket.emit(
                 'join-room',
-                room_id,
+                roomId,
                 peerId,
                 currentUserName,
                 localStorage.getItem('locked_room_pass'),

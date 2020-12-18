@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
+import { useHistory, useParams } from 'react-router';
 
 import { FaCog } from 'react-icons/fa';
 
-import Connection from '../../services/connection';
 import PreviewPage from '../PreviewPage';
+import Connection from '../../services/connection';
+import api from '../../services/api';
 
-import { Flex } from '../../helpers/styles';
+import { Flex, darktheme } from '../../helpers/styles';
+
 import SidePanel from '../../components/SidePanel';
 import ConfigModal from '../../components/ConfigModal';
 import Rounded from '../../components/RoundedButton';
@@ -149,6 +152,10 @@ const RoundedButton = styled(Rounded)`
 `;
 
 function RoomPage() {
+    const roomId = useParams().room_id;
+    const history = useHistory();
+
+    const [loaded, setLoaded] = useState(false);
     const [ready, setReady] = useState(false);
     const [connectedUsers, setConnectedUsers] = useState({});
     const [roomMembers, setRoomMembers] = useState([]);
@@ -162,95 +169,131 @@ function RoomPage() {
     };
 
     useEffect(() => {
+        checkRoomExistence();
+        // eslint-disable-next-line
+    }, []);
+
+    useEffect(() => {
         window.connectedUsers = connectedUsers;
     }, [connectedUsers]);
 
+    const checkRoomExistence = async () => {
+        const roomResponse = await api
+            .get(`/rooms/${roomId}`)
+            .catch(res => res.response);
+
+        if (roomResponse && roomResponse.status === 200) {
+            setLoaded(true);
+        } else {
+            history.replace(`/${roomId}/not-found`);
+        }
+    };
+
     return (
-        <>
+        <Flex flex="1" width="100%">
             <ConfigModal />
 
-            {ready === true ? (
-                <>
-                    <Logo />
-
-                    <Container>
-                        <Flex
-                            position="relative"
-                            height="calc(100% - 80px)"
-                            flex="1"
-                            width="100%"
-                        >
-                            <VideoGrid>
-                                <MinimizedVideoList />
-                                <RoundedButton
-                                    onClick={() => window.showConfigModal()}
-                                >
-                                    <FaCog />
-                                </RoundedButton>
-                                {currentUserStream && myId && (
-                                    <VideoContainer
-                                        me
-                                        user={roomMembers.find(
-                                            member => member.id === myId,
-                                        )}
-                                        mediaStream={currentUserStream}
-                                    />
-                                )}
-
-                                {connectedUsers &&
-                                    Object.values(connectedUsers).map(user => {
-                                        if (!user) return null;
-
-                                        const currentRoomMember = roomMembers.find(
-                                            member => member.id === user.peer,
-                                        );
-                                        return (
-                                            currentRoomMember && (
-                                                <VideoContainer
-                                                    key={user.peer}
-                                                    user={currentRoomMember}
-                                                    mediaStream={
-                                                        user.remoteStream
-                                                    }
-                                                />
-                                            )
-                                        );
-                                    })}
-                            </VideoGrid>
-
-                            <SidePanel
-                                roomMembers={roomMembers}
-                                setRoomMembers={setRoomMembers}
-                            />
-                        </Flex>
-
-                        <VideoControls
-                            user={roomMembers.find(
-                                member => member.id === myId,
-                            )}
-                            currentUserStream={currentUserStream}
-                            setCurrentUserStream={setCurrentUserStream}
-                            handleLeaveRoom={handleLeaveRoom}
-                            connectedUsers={connectedUsers}
-                        />
-
-                        <Connection
-                            myId={myId}
-                            setMyId={setMyId}
-                            currentUserStream={currentUserStream}
-                            setCurrentUserStream={setCurrentUserStream}
-                            connectedUsers={connectedUsers}
-                            setConnectedUsers={setConnectedUsers}
-                            handleLeaveRoom={handleLeaveRoom}
-                        />
-                    </Container>
-                </>
-            ) : (
-                <>
-                    <PreviewPage ready={ready} setReady={setReady} />
-                </>
+            {!loaded && (
+                <h1>
+                    <Flex color={darktheme.fontdark}>Loading...</Flex>
+                </h1>
             )}
-        </>
+
+            {loaded &&
+                (ready === true ? (
+                    <>
+                        <Logo />
+
+                        <Container>
+                            <Flex
+                                position="relative"
+                                height="calc(100% - 80px)"
+                                flex="1"
+                                width="100%"
+                            >
+                                <VideoGrid>
+                                    <MinimizedVideoList />
+                                    <RoundedButton
+                                        onClick={() => window.showConfigModal()}
+                                    >
+                                        <FaCog />
+                                    </RoundedButton>
+                                    {currentUserStream && myId && (
+                                        <VideoContainer
+                                            me
+                                            user={
+                                                roomMembers &&
+                                                roomMembers.find(
+                                                    member =>
+                                                        member.id === myId,
+                                                )
+                                            }
+                                            mediaStream={currentUserStream}
+                                        />
+                                    )}
+
+                                    {connectedUsers &&
+                                        Object.values(connectedUsers).map(
+                                            user => {
+                                                if (!user) return null;
+
+                                                const currentRoomMember = roomMembers.find(
+                                                    member =>
+                                                        member.id === user.peer,
+                                                );
+                                                return (
+                                                    currentRoomMember && (
+                                                        <VideoContainer
+                                                            key={user.peer}
+                                                            user={
+                                                                currentRoomMember
+                                                            }
+                                                            mediaStream={
+                                                                user.remoteStream
+                                                            }
+                                                        />
+                                                    )
+                                                );
+                                            },
+                                        )}
+                                </VideoGrid>
+
+                                <SidePanel
+                                    roomMembers={roomMembers}
+                                    setRoomMembers={setRoomMembers}
+                                />
+                            </Flex>
+
+                            <VideoControls
+                                user={
+                                    roomMembers &&
+                                    roomMembers.find(
+                                        member => member.id === myId,
+                                    )
+                                }
+                                currentUserStream={currentUserStream}
+                                setCurrentUserStream={setCurrentUserStream}
+                                handleLeaveRoom={handleLeaveRoom}
+                                connectedUsers={connectedUsers}
+                            />
+
+                            <Connection
+                                myId={myId}
+                                setMyId={setMyId}
+                                currentUserStream={currentUserStream}
+                                setCurrentUserStream={setCurrentUserStream}
+                                connectedUsers={connectedUsers}
+                                setConnectedUsers={setConnectedUsers}
+                                handleLeaveRoom={handleLeaveRoom}
+                            />
+                        </Container>
+                    </>
+                ) : (
+                    <>
+                        <PreviewPage ready={ready} setReady={setReady} />
+                    </>
+                ))}
+        </Flex>
     );
 }
 
