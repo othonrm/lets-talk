@@ -33,7 +33,7 @@ module.exports = {
             'error',
             { allowShortCircuit: true, allowTernary: true },
         ],
-        'linebreak-style': ['error', 'windows'],
+        'linebreak-style': ['error', 'unix'],
         'no-param-reassign': ['error', { props: false }],
         'arrow-body-style': 'off',
         'arrow-parens': 'off',
