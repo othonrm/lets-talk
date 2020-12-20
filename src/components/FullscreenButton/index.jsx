@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { FaExpand } from 'react-icons/fa';
+import { FaTv, FaExpand } from 'react-icons/fa';
 import styled, { css } from 'styled-components';
 
 const Container = styled.button`
@@ -38,7 +38,7 @@ function FullscreenButton({ handleClick, pip }) {
             onClick={handleClick}
             className="fullscreen_button"
         >
-            <FaExpand />
+            {pip ? <FaTv /> : <FaExpand />}
         </Container>
     );
 }

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 
 import styled, { css } from 'styled-components';
-import { getInitals, setFocus } from '../../helpers';
+import { getInitals, isMobileBrowse, setFocus } from '../../helpers';
 
 import AudioLevels from '../AudioLevels';
 import FullscreenButton from '../FullscreenButton';
@@ -31,7 +31,7 @@ const Container = styled.div`
 
     ${props =>
         props.me &&
-        !props.screen &&
+        props.invert &&
         css`
             & > video {
                 transform: scaleX(-1);
@@ -86,6 +86,10 @@ const Container = styled.div`
         border-radius: 6px;
         pointer-events: none;
         z-index: 1;
+    }
+
+    @media screen and (max-width: 760px) {
+        max-width: initial;
     }
 `;
 
@@ -210,6 +214,36 @@ function VideoContainer({ me, user, mediaStream }) {
         }
     };
 
+    const renderVideoButtons = type => {
+        let pipButton;
+
+        if (!isMobileBrowse && !documentFullScreen && user && user[type]) {
+            pipButton = (
+                <FullscreenButton
+                    pip
+                    handleClick={() => handleTogglePip(type)}
+                />
+            );
+        }
+
+        let fullscreenButton;
+
+        if (!isMobileBrowse && !documentFullScreen && user && user[type]) {
+            fullscreenButton = (
+                <FullscreenButton
+                    handleClick={() => handleToggleFullScreen(type)}
+                />
+            );
+        }
+
+        return (
+            <>
+                {pipButton}
+                {fullscreenButton}
+            </>
+        );
+    };
+
     return (
         <>
             <Container
@@ -225,23 +259,15 @@ function VideoContainer({ me, user, mediaStream }) {
                 <div className="user_name">
                     {user && user.name} (Compartilhando Tela)
                 </div>
-                {!documentFullScreen && user && user['screen'] && (
-                    <FullscreenButton
-                        pip
-                        handleClick={() => handleTogglePip('screen')}
-                    />
-                )}
-                {!documentFullScreen && user && user['screen'] && (
-                    <FullscreenButton
-                        handleClick={() => handleToggleFullScreen('screen')}
-                    />
-                )}
+
+                {renderVideoButtons('screen')}
             </Container>
 
             <Container
                 id={user && user.id}
                 className="video_container"
                 me={me}
+                invert={!document.pictureInPictureElement}
                 video={user && user.video}
                 onDoubleClick={() => setFocus(user && user.id)}
             >
@@ -256,17 +282,8 @@ function VideoContainer({ me, user, mediaStream }) {
                         mediaStream={mediaStream}
                     />
                 </div>
-                {!documentFullScreen && user && user['video'] && (
-                    <FullscreenButton
-                        pip
-                        handleClick={() => handleTogglePip('video')}
-                    />
-                )}
-                {!documentFullScreen && user && user['video'] && (
-                    <FullscreenButton
-                        handleClick={() => handleToggleFullScreen('video')}
-                    />
-                )}
+
+                {renderVideoButtons('video')}
             </Container>
         </>
     );

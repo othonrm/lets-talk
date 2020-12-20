@@ -15,7 +15,7 @@ import {
 } from 'react-icons/fa';
 
 import { darkmodeEnabled, darktheme, Flex } from '../../helpers/styles';
-import { replaceSenderTrack } from '../../helpers';
+import { replaceSenderTrack, isMobileBrowse } from '../../helpers';
 
 import Button from '../Button';
 import RoundedButton from '../RoundedButton';
@@ -289,12 +289,14 @@ function VideoControls({
                         {videoDisabled ? <FaVideoSlash /> : <FaVideo />}
                     </RoundedButton>
 
-                    <RoundedButton
-                        muted={user && user.screen}
-                        onClick={window.screenShare}
-                    >
-                        <FaDesktop />
-                    </RoundedButton>
+                    {!isMobileBrowse && (
+                        <RoundedButton
+                            muted={user && user.screen}
+                            onClick={window.screenShare}
+                        >
+                            <FaDesktop />
+                        </RoundedButton>
+                    )}
 
                     {roomOwner && (
                         <RoundedButton onClick={lockRoom}>

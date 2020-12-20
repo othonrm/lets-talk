@@ -46,7 +46,7 @@ const VideoGrid = styled(Flex).attrs(() => ({
     width: 100%;
     flex: 1;
     overflow: hidden;
-    padding: 30px;
+    padding: 16px;
     box-sizing: border-box;
     background-color: #444;
     background: rgb(92 56 185 / 0.7);
@@ -60,13 +60,14 @@ const VideoGrid = styled(Flex).attrs(() => ({
     display: grid;
     grid-gap: 16px;
     grid-template-columns: repeat(auto-fit, minmax(calc(25% - 60px), 1fr));
+    grid-template-rows: repeat(auto-fit, minmax(calc(25% - 60px), 1fr));
 
     @media screen and (max-width: 1222px) {
         grid-template-columns: repeat(auto-fit, minmax(calc(30% - 60px), 1fr));
     }
 
     @media screen and (max-width: 760px) {
-        grid-template-columns: repeat(auto-fit, minmax(calc(48% - 60px), 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(calc(48% - 60px), 100%));
     }
 
     &.minimized {
