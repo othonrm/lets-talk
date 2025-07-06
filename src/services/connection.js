@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 /* eslint-disable no-param-reassign */
 import { useEffect, useState } from 'react';
 import io from 'socket.io-client';

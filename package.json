@@ -2,6 +2,32 @@
     "name": "lets-talk",
     "version": "0.1.0",
     "private": true,
+    "scripts": {
+        "start": "node server.js",
+        "start:client": "react-scripts start",
+        "start:server": "nodemon server.js",
+        "build": "react-scripts build",
+        "test": "react-scripts test",
+        "eject": "react-scripts eject"
+    },
+    "eslintConfig": {
+        "extends": [
+            "react-app",
+            "react-app/jest"
+        ]
+    },
+    "browserslist": {
+        "production": [
+            ">0.2%",
+            "not dead",
+            "not op_mini all"
+        ],
+        "development": [
+            "last 1 chrome version",
+            "last 1 firefox version",
+            "last 1 safari version"
+        ]
+    },
     "dependencies": {
         "@testing-library/jest-dom": "^5.11.4",
         "@testing-library/react": "^11.1.0",
@@ -31,38 +57,12 @@
         "react-icons": "^4.1.0",
         "react-router": "^5.2.0",
         "react-router-dom": "^5.2.0",
-        "react-scripts": "4.0.1",
+        "react-scripts": "5.0.1",
         "socket.io": "^3.0.3",
         "socket.io-client": "^3.0.3",
         "styled-components": "^5.2.1",
         "uuid": "^8.3.1",
         "web-vitals": "^0.2.4"
-    },
-    "scripts": {
-        "start": "node server.js",
-        "start:client": "react-scripts start",
-        "start:server": "nodemon server.js",
-        "build": "react-scripts build",
-        "test": "react-scripts test",
-        "eject": "react-scripts eject"
-    },
-    "eslintConfig": {
-        "extends": [
-            "react-app",
-            "react-app/jest"
-        ]
-    },
-    "browserslist": {
-        "production": [
-            ">0.2%",
-            "not dead",
-            "not op_mini all"
-        ],
-        "development": [
-            "last 1 chrome version",
-            "last 1 firefox version",
-            "last 1 safari version"
-        ]
     },
     "devDependencies": {
         "eslint-config-prettier": "^7.0.0",
