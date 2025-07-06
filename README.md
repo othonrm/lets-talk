@@ -55,10 +55,10 @@ A "modern" JavaScript application built with React, designed to facilitate real-
 
 ### Scripts
 
-- `pnpm start` – Starts both the BE & FE.
-- `pnpm start:client` – Runs the FE.
-- `pnpm start:server` – Runs the BE.
-- `pnpm build` – Builds the application.
+- `pnpm start` – Starts both the BE.
+- `pnpm start:client` – Runs the FE in development mode.
+- `pnpm start:server` – Runs the BE in development mode.
+- `pnpm build` – Builds the application for production.
 - `pnpm test` – Run tests
 
 ## Project Structure
