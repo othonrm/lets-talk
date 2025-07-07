@@ -1,19 +1,14 @@
 const mongoose = require('mongoose');
 
-mongoose.set('useFindAndModify', false);
-
 const databaseUrl = process.env.DB_HOST.replace(
-    '<username>',
+    '<db_username>',
     process.env.DB_USERNAME,
-)
-    .replace('<password>', process.env.DB_PASSWORD)
-    .replace('<database>', process.env.DB_DATABASE);
+).replace('<db_password>', process.env.DB_PASSWORD);
+
+console.log('Connecting to MongoDB...');
 
 mongoose
-    .connect(databaseUrl, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-    })
+    .connect(databaseUrl)
     .then(() => {
         console.log('Mongdb connected');
     })

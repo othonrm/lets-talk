@@ -17,9 +17,7 @@ const port = process.env.PORT || 8080;
 const io = require('socket.io')(server, {
     cors: {
         origin:
-            process.env.NODE_ENV !== 'production'
-                ? '*'
-                : 'https://www.lets-talk.dev.br',
+            process.env.NODE_ENV !== 'production' ? '*' : process.env.APP_URL,
     },
 });
 
@@ -45,16 +43,13 @@ app.use((req, res, next) => {
                   'http://127.0.0.1:8080',
                   'http://localhost:3000',
               ]
-            : ['https://www.lets-talk.dev.br'];
+            : [process.env.APP_URL];
     const { origin } = req.headers;
 
     if (allowedOrigins.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
     } else {
-        res.setHeader(
-            'Access-Control-Allow-Origin',
-            'https://www.lets-talk.dev.br',
-        );
+        res.setHeader('Access-Control-Allow-Origin', process.env.APP_URL);
     }
     res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
